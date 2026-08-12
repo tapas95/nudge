@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, ActivityIndicator } from 'react-native';
-import { ThemeProvider, useTheme } from './theme/ThemeContext';
-import Login from './screens/Login';
-import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { View, ActivityIndicator } from 'react-native';
+import { ThemeProvider, useTheme } from "@/theme/ThemeContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import Home from "@/screens/Home";
+import Login from "@/screens/Login";
 
 function MainNavigator() {
   const { user, isAuthenticated, initializing } = useAuth();
@@ -17,7 +18,7 @@ function MainNavigator() {
   return (
     <>
       <StatusBar style={ isDarkMode ? 'light' : 'dark' } />
-      { isAuthenticated ? ( <Login /> ) : ( <Login /> ) }
+      { isAuthenticated ? ( <Home /> ) : ( <Login /> ) }
     </>
   );
 }

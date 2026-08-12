@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { auth, db } from "@/services/firebase";
 
 //Formats Firebase error codes into human-readable user messages
 const formatAuthError = ( errorCode ) => {
@@ -57,7 +57,7 @@ export const loginUser = async ( email, password ) => {
         if ( !userDocSnap.exists() ) {
             return { success: false, user: null, error: 'User profile not found.' };
         }
-        return { success: true, user: docSnap.data(), error: null };
+        return { success: true, user: userDocSnap.data(), error: null };
     }catch ( error ) {
         return { success: false, user: null, error: formatAuthError( error.code ) };
     }

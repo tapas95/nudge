@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { useTheme } from "../../theme/ThemeContext";
+import { useTheme } from "@/theme/ThemeContext";
 
 const Button = ( props ) => {
     const { theme } = useTheme();
     return (
         <Pressable onPress={ props.onPress }>
-            <View style={ [ styles.buttonContainer, { backgroundColor: theme.colors.primary }, props.styles ] }>
+            <View style={ [ styles.buttonContainer, { backgroundColor: theme.colors.primary }, props.style ] }>
                 <Text style={ [ styles.buttonText, { color: theme.colors.badgeText } ] }>{ props.children }</Text>
             </View>
         </Pressable>

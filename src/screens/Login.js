@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import Button from "../components/ui/Button";
+import Button from "@/components/ui/Button";
 
 const Login = () => {
     return (
