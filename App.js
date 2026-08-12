@@ -1,20 +1,33 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View, ActivityIndicator } from 'react-native';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import Login from './screens/Login';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 
-export default function App() {
+function MainNavigator() {
+  const { user, isAuthenticated, initializing } = useAuth();
+  const { theme, isDarkMode } = useTheme();
+  if ( initializing ) {
+    return (
+      <View>
+        <ActivityIndicator size="large" color={ theme.colors.primary } />
+      </View>
+    );
+  }
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <>
+      <StatusBar style={ isDarkMode ? 'light' : 'dark' } />
+      { isAuthenticated ? ( <Login /> ) : ( <Login /> ) }
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <MainNavigator />
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
