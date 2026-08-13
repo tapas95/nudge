@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from "@/theme/ThemeContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Home from "@/screens/Home";
@@ -25,10 +26,20 @@ function MainNavigator() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <MainNavigator />
-      </AuthProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <SafeAreaView style={ styles.appWrapper }>
+        <ThemeProvider>
+          <AuthProvider>
+            <MainNavigator />
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  appWrapper: {
+    flex: 1,
+  },
+});
