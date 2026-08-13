@@ -97,6 +97,12 @@ export const Radii = {
 };
 
 export const Typography = {
+  fontFamily: {
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+  },
   fontSize: {
     micro: 10,                   // Unread count badges, delivery status
     caption: 12,                 // Timestamps, typing indicators
