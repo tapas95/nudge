@@ -22,7 +22,7 @@ function MainNavigator() {
     );
   }
   return (
-    <SafeAreaView style={ [ styles.appWrapper, { backgroundColor: theme.colors.background } ] }>
+    <SafeAreaView style={ [ styles.appWrapper, { backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.lg } ] }>
       <StatusBar style={ isDarkMode ? 'light' : 'dark' } />
       { isAuthenticated ? ( <Home /> ) : ( <Login /> ) }
     </SafeAreaView>
