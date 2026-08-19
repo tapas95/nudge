@@ -50,9 +50,11 @@ const Button = ( props ) => {
 export default Button;
 
 const styles = StyleSheet.create( {
+    btnContainer:{
+        alignItems: 'center'
+    },
     buttonText:{
         textTransform: 'uppercase',
-        textAlign: 'center',
         letterSpacing: 1
     },
     pressed:{

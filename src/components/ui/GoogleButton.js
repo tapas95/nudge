@@ -5,15 +5,18 @@ import { useTheme } from "@/theme/ThemeContext";
 const GoogleButton = () => {
     const { theme } = useTheme();
     return(
-        <TouchableOpacity style={ [
-            styles.googleBtn,
-            {
-                paddingHorizontal: theme.spacing.lg,
-                paddingVertical: theme.spacing.md,
-                borderColor: theme.colors.textMuted,
-                borderRadius: theme.radii.full
-            }
-        ] }>
+        <TouchableOpacity
+            style={ [
+                styles.googleBtn,
+                {
+                    paddingHorizontal: theme.spacing.lg,
+                    paddingVertical: theme.spacing.md,
+                    borderColor: theme.colors.textMuted,
+                    borderRadius: theme.radii.full
+                }
+            ] }
+            activeOpacity={ 0.75 }
+        >
             <GoogleIcon width={ 24 } height={ 24 }></GoogleIcon>
             <Text style={
                 {
