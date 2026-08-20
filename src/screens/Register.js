@@ -64,7 +64,7 @@ const Register = ( { navigation } ) => {
     }
 
     return(
-        <SafeAreaView style={ { flex: 1 } }>
+        <SafeAreaView style={ { flex: 1 } } edges={ [ 'bottom' ] }>
             <KeyboardAvoidingView style={ { flex: 1 } } behavior={ Platform.OS === 'ios' ? 'padding' : undefined }>
                 <ScrollView showsVerticalScrollIndicator={ false } keyboardShouldPersistTaps="handled" contentContainerStyle={ styles.scrollContainer }>
                     <View style={ styles.registerContainer }>
