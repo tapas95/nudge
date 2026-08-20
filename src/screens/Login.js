@@ -129,6 +129,7 @@ const Login = ( { navigation } ) => {
                                 label="Email"
                                 value={ email }
                                 keyboardType="email-address"
+                                textContentType="emailAddress"
                                 autoCapitalize="none"
                                 autoCorrect={ false }
                                 onChangeText={ text => {
@@ -140,7 +141,6 @@ const Login = ( { navigation } ) => {
                                 placeholder="Enter Your Password"
                                 label="Password"
                                 textContentType="password"
-                                // secureTextEntry={ true }
                                 autoCapitalize="none"
                                 autoCorrect={ false }
                                 isPassword={ true }
@@ -201,7 +201,7 @@ const Login = ( { navigation } ) => {
                             <TouchableOpacity
                                 onPress={ () => navigation.navigate( 'Register' ) }
                                 activeOpacity={ 0.75 }
-                                hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
+                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
                             >
                                 <Text style={ { fontFamily: theme.typography.fontFamily.bold, color: theme.colors.primary } }>Sign Up</Text>
                             </TouchableOpacity>

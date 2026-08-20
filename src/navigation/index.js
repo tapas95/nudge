@@ -31,6 +31,8 @@ export default function RootNavigator(){
 
 const styles = StyleSheet.create( {
     loading:{
-        flex: 1
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
     }
 } );
