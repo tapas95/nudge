@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import GoogleButton from "@/components/ui/GoogleButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const Login = ( { navigation } ) => {
     const { theme } = useTheme();
     const { login } = useAuth();
@@ -14,22 +16,40 @@ const Login = ( { navigation } ) => {
     const [ password, setPassword ] = useState( '' );
     const [ loading, setLoading ] = useState( false );
     const [ errorMessage, setErrorMessage ] = useState( '' );
+    const validateForm = () => {
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password.trim();
+        if( !trimmedEmail || !trimmedPassword ){
+            setErrorMessage( 'Please fill in all fields.' );
+            return false;
+        }
+        if( !EMAIL_REGEX.test( trimmedEmail ) ){
+            setErrorMessage( 'Please enter a valid email address.' );
+            return false;
+        }
+        if( trimmedPassword.length < 6 ){
+            setErrorMessage( 'Password must be at least 6 characters long.' );
+            return false;
+        }
+        return true;
+    }
     const handleLogin = async () => {
         Keyboard.dismiss();
         setErrorMessage( '' );
-        if( !email.trim() || !password.trim() ){
-            setErrorMessage( 'Please enter both email and password.' );
-            return;
-        }
+        if( !validateForm() ) return;
         setLoading( true );
-        const result = await login( email.trim(), password.trim() );
-        if( !result.success ){
-            setErrorMessage( result.error );
+        try{
+            const result = await login( email.trim(), password.trim() );
+            if( !result.success ){
+                setErrorMessage( result.error || 'Failed to create account.' );
+            }
+        } catch( err ){
+            setErrorMessage( err.message || 'An unexpected error occurred.' );
+        } finally{
             setLoading( false );
-            return;
         }
-        setLoading( false );
     }
+
     return (
         <SafeAreaView style={ { flex: 1 } }>
             <KeyboardAvoidingView style={ { flex: 1 } } behavior={ Platform.OS === 'ios' ? 'padding' : undefined }>
@@ -132,6 +152,7 @@ const Login = ( { navigation } ) => {
                                 textContentType="emailAddress"
                                 autoCapitalize="none"
                                 autoCorrect={ false }
+                                returnKeyType="next"
                                 onChangeText={ text => {
                                     setEmail( text );
                                     if( errorMessage ) setErrorMessage( '' );
@@ -145,6 +166,7 @@ const Login = ( { navigation } ) => {
                                 autoCorrect={ false }
                                 isPassword={ true }
                                 value={ password }
+                                returnKeyType="done"
                                 onChangeText={ text => {
                                     setPassword( text );
                                     if( errorMessage ) setErrorMessage( '' );
