@@ -41,7 +41,7 @@ const Login = ( { navigation } ) => {
         try{
             const result = await login( email.trim(), password.trim() );
             if( !result.success ){
-                setErrorMessage( result.error || 'Failed to create account.' );
+                setErrorMessage( result.error || 'Failed to log in. Please try again.' );
             }
         } catch( err ){
             setErrorMessage( err.message || 'An unexpected error occurred.' );
