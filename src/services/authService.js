@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/services/firebase";
 
@@ -60,6 +60,16 @@ export const loginUser = async ( email, password ) => {
         return { success: true, user: userDocSnap.data(), error: null };
     }catch ( error ) {
         return { success: false, user: null, error: formatAuthError( error.code ) };
+    }
+}
+
+//forgot password
+export const forgotPassword = async email => {
+    try{
+        await sendPasswordResetEmail( auth, email.trim() );
+        return { success: true, error: null };
+    } catch( error ){
+       return { success: false, error: formatAuthError( error.code ) };
     }
 }
 

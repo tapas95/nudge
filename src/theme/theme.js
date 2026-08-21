@@ -43,6 +43,10 @@ export const lightTheme = {
     badge: Palette.accentCoral,
     badgeText: '#FFFFFF',
     inputBackground: Palette.surfaceLight2,
+
+    success: Palette.success,
+    danger: Palette.danger,
+    warning: Palette.warning
   },
   typography: Typography,
   spacing: Spacing,
@@ -94,6 +98,13 @@ export const darkTheme = {
     badge: Palette.accentCoral,
     badgeText: '#FFFFFF',
     inputBackground: Palette.surfaceDark3,
+
+    success: Palette.success,
+    successMuted: Palette.successMuted,
+    danger: Palette.danger,
+    dangerMuted: Palette.dangerMuted,
+    warning: Palette.warning,
+    warningMuted: Palette.warningMuted,
   },
   typography: Typography,
   spacing: Spacing,
