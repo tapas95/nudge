@@ -3,7 +3,7 @@ import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from '@/theme/ThemeContext';
 import AuthNavigator from "./AuthNavigator";
-import Home from "@/screens/Home";
+import MainNavigator from "./MainNavigator";
 
 export default function RootNavigator(){
     const { isAuthenticated, initializing } = useAuth();
@@ -24,7 +24,7 @@ export default function RootNavigator(){
     }
     return(
         <NavigationContainer theme={ navigationTheme }>
-            { isAuthenticated ? <Home /> : <AuthNavigator /> }
+            { isAuthenticated ? <MainNavigator /> : <AuthNavigator /> }
         </NavigationContainer>
     )
 }

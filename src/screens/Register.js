@@ -160,7 +160,7 @@ const Register = ( { navigation } ) => {
                                 textContentType="emailAddress"
                                 returnKeyType="next"
                                 onChangeText={ text => {
-                                    setEmail( text );
+                                    setEmail( text.toLowerCase() );
                                     clearError();
                                 } }
                             />
