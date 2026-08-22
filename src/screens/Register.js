@@ -14,7 +14,7 @@ const Register = ( { navigation } ) => {
     const { register } = useAuth();
     const [ name, setName ] = useState( '' );
     const [ email, setEmail ] = useState( '' );
-    // const [ phone, setPhone ] = useState( '' );
+    const [ phone, setPhone ] = useState( '' );
     const [ password, setPassword ] = useState( '' );
     const [ confirmPassword, setConfirmPassword ] = useState( '' );
     const [ loading, setLoading ] = useState( false );
@@ -24,7 +24,7 @@ const Register = ( { navigation } ) => {
     const validateForm = () => {
         const trimmedName = name.trim();
         const trimmedEmail = email.trim();
-        // const trimmedPhone = phone.trim();
+        const trimmedPhone = phone.trim();
         const trimmedPassword = password.trim();
         const trimmedConfirmPassword = confirmPassword.trim();
         if( !trimmedName || !trimmedEmail || !trimmedPassword || !trimmedConfirmPassword ){
@@ -52,10 +52,11 @@ const Register = ( { navigation } ) => {
         if( !validateForm() ) return;
         setLoading( true );
         try{
-            const result = await register( email.trim(), password.trim(), name.trim() );
+            const result = await register( email.trim(), password.trim(), name.trim(), phone.trim() );
             if( !result.success ){
                 setErrorMessage( result.error || 'Failed to create account.' );
             }
+            navigation.navigate( 'VerifyOtp', { phoneNumber: result.formattedPhone } );
         } catch( err ){
             setErrorMessage( err.message || 'An unexpected error occurred.' );
         } finally{
@@ -164,7 +165,7 @@ const Register = ( { navigation } ) => {
                                     clearError();
                                 } }
                             />
-                            {/* <Input
+                            <Input
                                 placeholder="Enter Phone Number"
                                 label="Phone"
                                 value={ phone }
@@ -175,7 +176,7 @@ const Register = ( { navigation } ) => {
                                 onChangeText={ text => {
                                     setPhone( text );
                                 } }
-                            /> */}
+                            />
                             <Input
                                 placeholder="Enter Your Password"
                                 label="Password"

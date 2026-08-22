@@ -6,7 +6,7 @@ import AuthNavigator from "./AuthNavigator";
 import MainNavigator from "./MainNavigator";
 
 export default function RootNavigator(){
-    const { isAuthenticated, initializing } = useAuth();
+    const { user, isAuthenticated, initializing } = useAuth();
     const { theme, isDarkMode } = useTheme();
     const navigationTheme = {
         ...( isDarkMode ? DarkTheme : DefaultTheme ),
@@ -24,7 +24,7 @@ export default function RootNavigator(){
     }
     return(
         <NavigationContainer theme={ navigationTheme }>
-            { isAuthenticated ? <MainNavigator /> : <AuthNavigator /> }
+            { isAuthenticated && user?.phoneVerified ? <MainNavigator /> : <AuthNavigator /> }
         </NavigationContainer>
     )
 }

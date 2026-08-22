@@ -4,6 +4,7 @@ import { useTheme } from "@/theme/ThemeContext";
 import Login from "@/screens/Login";
 import Register from "@/screens/Register";
 import ForgotPassword from "@/screens/ForgotPassword";
+import VerifyOtp from "@/screens/VerifyOtp";
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const Stack = createNativeStackNavigator();
@@ -109,6 +110,7 @@ export default function AuthNavigator(){
                     )
                 } ) }
             ></Stack.Screen>
+            <Stack.Screen name="VerifyOtp" component={ VerifyOtp } />
         </Stack.Navigator>
     )
 }
