@@ -4,6 +4,7 @@ import { useTheme } from "@/theme/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Home from "@/screens/Home";
+import NewChat from "@/screens/NewChat";
 
 const Stack = createNativeStackNavigator();
 
@@ -81,6 +82,14 @@ export default function MainNavigator(){
                     )
                 } ) }
             ></Stack.Screen>
+            <Stack.Screen
+                name="NewChatModal"
+                component={ NewChat }
+                options={ {
+                    headerTitle: 'Select Contact',
+                    headerBackTitleVisible: false,
+                } }
+            />
         </Stack.Navigator>
     )
 }
