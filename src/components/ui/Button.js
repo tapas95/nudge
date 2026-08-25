@@ -10,7 +10,7 @@ const Button = ( props ) => {
             android_ripple={ { color: theme.colors.primaryDark } }
             style={ ( { pressed } ) => [
                 {
-                    borderRadius: theme.radii.xs,
+                    borderRadius: theme.radii.xl,
                     overflow: 'hidden',
                 },
                 pressed && styles.pressed
@@ -18,19 +18,26 @@ const Button = ( props ) => {
             disabled={ props.disabled }
         >
             <LinearGradient
-                style={ {
-                    borderRadius: theme.radii.xs,
-                    paddingHorizontal: theme.spacing.xl,
-                    paddingVertical: theme.spacing.md,
-                } }
-                colors={ [ theme.colors.primary, theme.colors.primaryDark ] }
+                style={ [
+                    styles.btnContainer,
+                    {
+                        borderRadius: theme.radii.xl,
+                        paddingHorizontal: theme.spacing.lg,
+                        paddingVertical: theme.spacing.lg
+                    }
+                ] }
+                colors={ [ theme.colors.primary, theme.colors.accent ] }
+                start={ { x: 0, y: 0.5 } }
+                end={ { x: 1, y: 0.5 } }
             >
                 <Text
                     style={ [
                         styles.buttonText,
                         { 
-                            color: theme.colors.badgeText,
                             fontFamily: theme.typography.fontFamily.bold,
+                            color: theme.colors.badgeText,
+                            fontSize: theme.spacing.lg,
+                            lineHeight: theme.spacing.xl
                         }
                     ] }
                 >
@@ -42,10 +49,13 @@ const Button = ( props ) => {
 }
 export default Button;
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create( {
+    btnContainer:{
+        alignItems: 'center'
+    },
     buttonText:{
         textTransform: 'uppercase',
-        textAlign: 'center',
+        letterSpacing: 1
     },
     pressed:{
         opacity: 0.75,

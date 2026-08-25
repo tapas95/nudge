@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/services/firebase";
-import { loginUser, registerUser, logoutUser } from "@/services/authService";
+import { loginUser, registerUser, forgotPassword, logoutUser } from "@/services/authService";
 
 const AuthContext = createContext( null );
 
@@ -46,6 +46,7 @@ export const AuthProvider = ( { children } ) => {
         initializing,
         register: registerUser,
         login: loginUser,
+        resetPassword: forgotPassword,
         logout: logoutUser,
     };
     return <AuthContext.Provider value={ value }>{ children }</AuthContext.Provider>;

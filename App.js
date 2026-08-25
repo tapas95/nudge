@@ -2,31 +2,17 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from "@/theme/ThemeContext";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import Home from "@/screens/Home";
-import Login from "@/screens/Login";
+import { AuthProvider } from "@/context/AuthContext";
+import RootNavigator from '@/navigation';
 
 SplashScreen.preventAutoHideAsync();
 
-function MainNavigator() {
-  const { user, isAuthenticated, initializing } = useAuth();
-  const { theme, isDarkMode } = useTheme();
-  if ( initializing ) {
-    return (
-      <View>
-        <ActivityIndicator size="large" color={ theme.colors.primary } />
-      </View>
-    );
-  }
-  return (
-    <SafeAreaView style={ [ styles.appWrapper, { backgroundColor: theme.colors.background } ] }>
-      <StatusBar style={ isDarkMode ? 'light' : 'dark' } />
-      { isAuthenticated ? ( <Home /> ) : ( <Login /> ) }
-    </SafeAreaView>
-  );
+function ThemedStatusBar() {
+  const { isDarkMode } = useTheme();
+  return <StatusBar style={ isDarkMode ? 'light' : 'dark' } />;
 }
 
 export default function App() {
@@ -46,11 +32,12 @@ export default function App() {
   }
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <MainNavigator />
-        </AuthProvider>
-      </ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ThemedStatusBar />
+            <RootNavigator />
+          </AuthProvider>
+        </ThemeProvider>
     </SafeAreaProvider>
   );
 }

@@ -54,7 +54,11 @@ export const Palette = {
   deliveredReceipt: '#64748B',
   onlineBadge: '#FF5C77',        // Coral pulse indicator for Nudge
   danger: '#EF4444',
+  dangerMuted: 'rgba(239, 68, 68, 0.15)',
+  success: '#10B981',
+  successMuted: 'rgba(16, 185, 129, 0.15)',
   warning: '#F59E0B',
+  warningMuted: 'rgba(245, 158, 11, 0.15)',
 };
 
 export const Spacing = {
