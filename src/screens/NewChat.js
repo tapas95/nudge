@@ -24,10 +24,15 @@ const NewChat = () => {
             }
             const { data } = await Contacts.getContactsAsync( {
                 fields: [ Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails, Contacts.Fields.Image ],
-                // sort: Contacts.SortTypes.email,
+                sort: Contacts.SortTypes.FirstName
             } );
-            setContacts( data );
-            // console.log('Fetched Contacts:', JSON.stringify( data[4], null, 2 ));
+            const validContacts = data.filter( ( contact ) => {
+                const hasValidPhoneNumber = Array.isArray( contact.phoneNumbers ) && contact.phoneNumbers.length > 0;
+                const rawName = contact.name?.trim();
+                const isInvalidName = !rawName || rawName.toLowerCase() === 'null null' || rawName.toLowerCase() === 'null';
+                return hasValidPhoneNumber && !isInvalidName;
+            } )
+            setContacts( validContacts );
         } catch( err ){
             console.error( 'Error fetching contacts:', err );
             Alert.alert( 'Error', 'Failed to load contacts from your device.' );
@@ -46,7 +51,7 @@ const NewChat = () => {
     }
     if ( loading ) {
         return (
-            <View style={[ styles.center, { backgroundColor: theme.colors.background } ]}>
+            <View style={ [ styles.center, { backgroundColor: theme.colors.background } ] }>
                 <ActivityIndicator size="large" color={ theme.colors.primary } />
                 <Text style={{ color: theme.colors.textSecondary, marginTop: 12 }}>
                     Loading contacts...
@@ -61,7 +66,12 @@ const NewChat = () => {
                 keyExtractor={ ( item ) => item.id }
                 renderItem={ ( { item } ) => (
                     <TouchableOpacity
-                        style={ [ styles.contactRow, { borderBottomColor: theme.colors.border } ] }
+                        style={ [
+                            styles.contact,
+                            {
+                                borderBottomColor: theme.colors.border
+                            }
+                        ] }
                         activeOpacity={ 0.75 }
                     >
                         <View style={ [
@@ -77,6 +87,7 @@ const NewChat = () => {
                                     <Text style={ [
                                         styles.avatarText,
                                         {
+                                            fontFamily: theme.typography.fontFamily.semibold,
                                             color: theme.colors.text
                                         }
                                     ] }>
@@ -89,6 +100,7 @@ const NewChat = () => {
                             <Text style={ [
                                 styles.name,
                                 {
+                                    fontFamily: theme.typography.fontFamily.semibold,
                                     color: theme.colors.text
                                 }
                             ] }>
@@ -97,6 +109,7 @@ const NewChat = () => {
                             <Text style={ [
                                 styles.phone,
                                 {
+                                    fontFamily: theme.typography.fontFamily.medium,
                                     color: theme.colors.textSecondary
                                 }
                             ] }>
@@ -106,10 +119,11 @@ const NewChat = () => {
                                 <Text style={ [
                                     styles.email,
                                     {
+                                        fontFamily: theme.typography.fontFamily.medium,
                                         color: theme.colors.textSecondary
                                     }
                                 ] }>
-                                    { item.email }
+                                    { item.emails[ 0 ].email }
                                 </Text>
                             ) : null }
                         </View>
@@ -122,7 +136,7 @@ const NewChat = () => {
 export default NewChat;
 
 const styles = StyleSheet.create( {
-    contactRow: {
+    contact:{
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
@@ -139,14 +153,17 @@ const styles = StyleSheet.create( {
         justifyContent: 'center'
     },
     avatarText:{
-        fontSize: 16
+        fontSize: 18
     },
     name: {
         fontSize: 16,
-        fontWeight: '600',
     },
     phone: {
-        fontSize: 13,
+        fontSize: 12,
         marginTop: 2,
     },
+    email:{
+        fontSize: 12,
+        marginTop: 2
+    }
 } )

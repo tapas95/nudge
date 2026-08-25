@@ -48,6 +48,9 @@ const Input = ( { label, placeholder, isPassword = false, style, ...restProps } 
 export default Input;
 
 const styles = StyleSheet.create( {
+    inputContainer:{
+        width: '100%'
+    },
     fieldContainer:{
         position: 'relative'
     },

@@ -30,6 +30,7 @@ const Home = ( { navigation } ) => {
                     <Input
                         placeholder="Search messages or people"
                         style={ styles.searchInput }
+                        placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
                 {/* <Button onPress={ handleLogout }>Logout</Button> */}
@@ -55,9 +56,11 @@ export default Home;
 const styles = StyleSheet.create( {
     homeContainer: {
         flex: 1,
-        paddingHorizontal: 16
+        paddingHorizontal: 16,
+        paddingVertical: 16
     },
     searchContainer:{
+        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         position: 'relative'
@@ -67,12 +70,10 @@ const styles = StyleSheet.create( {
         left: 10,
         zIndex: 1
     },
-    searchIcon:{
-        
-    },
     searchInput:{
         flex: 1,
-        paddingLeft: 44
+        paddingLeft: 44,
+        width: '100%'
     },
     fab: {
         position: 'absolute',
