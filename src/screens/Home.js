@@ -33,7 +33,7 @@ const Home = ( { navigation } ) => {
                         placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
-                {/* <Button onPress={ handleLogout }>Logout</Button> */}
+                <Button onPress={ handleLogout }>Logout</Button>
                 <TouchableOpacity
                     style={[
                         styles.fab,

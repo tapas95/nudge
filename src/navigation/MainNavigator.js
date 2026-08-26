@@ -5,13 +5,14 @@ import { useAuth } from "@/context/AuthContext";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Home from "@/screens/Home";
 import NewChat from "@/screens/NewChat";
+import ChatScreen from '@/screens/ChatScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function MainNavigator(){
     const { theme } = useTheme();
     const { user } = useAuth();
-    console.log(user);
+    // console.log(user);
     return(
         <Stack.Navigator
             screenOptions={ {
@@ -87,6 +88,13 @@ export default function MainNavigator(){
                 component={ NewChat }
                 options={ {
                     headerTitle: 'Select Contact',
+                    headerBackTitleVisible: false
+                } }
+            />
+            <Stack.Screen
+                name="ChatScreen"
+                component={ ChatScreen }
+                options={ {
                     headerBackTitleVisible: false,
                 } }
             />
