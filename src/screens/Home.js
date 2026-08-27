@@ -1,23 +1,62 @@
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Button from "@/components/ui/Button";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Input from "@/components/ui/Input";
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const Home = ( { navigation } ) => {
-    const { logout } = useAuth();
+    const { user } = useAuth();
     const { theme } = useTheme();
-    const handleLogout = async () => {
-        try{
-            await logout();
-        } catch( err ){
-            console.log( err );
-        }
-    }
+    const insets = useSafeAreaInsets();
     return (
-        <SafeAreaView style={ { flex: 1 } } edges={ [ "bottom" ] }>
+        <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
+            <View style={ [
+                styles.homeHeader,
+                {
+                    paddingTop: insets.top + 12,
+                    backgroundColor: theme.colors.headerBackground
+                }
+            ] }>
+                <TouchableOpacity
+                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                    activeOpacity={ 0.75 }
+                >
+                    <View style={ styles.userContainer }>
+                        <View style={ [
+                            styles.userAvatarContainer,
+                            {
+                                borderColor: theme.colors.text
+                            }
+                        ] }>
+                            <Image
+                                source={ { uri: user?.avatarUrl } }
+                                width={ 32 }
+                                height={ 32 }
+                                resizeMode="cover"
+                                style={ styles.userAvatar }
+                            />
+                            <View style={ [
+                                styles.currentStatus,
+                                {
+                                    backgroundColor: user.isOnline ? theme.colors.success : theme.colors.danger
+                                }
+                            ] }></View>
+                        </View>
+                        <Text
+                            style={ [
+                                styles.username,
+                                {
+                                    fontFamily: theme.typography.fontFamily.bold,
+                                    color: theme.colors.text
+                                }
+                            ] }
+                        >
+                            Hi, { user?.displayName?.split( ' ' )[ 0 ] }
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
             <View style={ styles.homeContainer }>
                 <View style={ styles.searchContainer }>
                     <TouchableOpacity
@@ -33,7 +72,6 @@ const Home = ( { navigation } ) => {
                         placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
-                <Button onPress={ handleLogout }>Logout</Button>
                 <TouchableOpacity
                     style={[
                         styles.fab,
@@ -48,12 +86,45 @@ const Home = ( { navigation } ) => {
                     <Ionicons name="chatbubble-ellipses-outline" size={ 24 } color={ theme.colors.text } />
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 export default Home;
 
 const styles = StyleSheet.create( {
+    homeHeader:{
+        paddingHorizontal: 16,
+        paddingBottom: 12
+    },
+    userContainer:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    userAvatarContainer:{
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderRadius: 32,
+        position: 'relative'
+    },
+    userAvatar:{
+        borderRadius: 32,
+    },
+    currentStatus:{
+        width: 8,
+        height: 8,
+        borderRadius: 8,
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: '#ffffff'
+    },
+    username:{
+        fontSize: 16,
+        lineHeight: 22
+    },
     homeContainer: {
         flex: 1,
         paddingHorizontal: 16,
@@ -71,9 +142,7 @@ const styles = StyleSheet.create( {
         zIndex: 1
     },
     searchInput:{
-        flex: 1,
         paddingLeft: 44,
-        width: '100%'
     },
     fab: {
         position: 'absolute',
