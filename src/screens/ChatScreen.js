@@ -152,7 +152,6 @@ const ChatScreen = ( { route, navigation } ) => {
                                     renderItem={ ( { item } ) => {
                                         const isMe = item.senderId === currentUser?.uid;
                                         const formattedTime = formatMessageTime( item.createdAt );
-                                        console.log( JSON.stringify(item, null, 2 ) );
                                         return(
                                             <View style={ [
                                                 styles.messageContainer,

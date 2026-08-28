@@ -1,14 +1,62 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { db } from "@/services/firebase";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import Input from "@/components/ui/Input";
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Button from "@/components/ui/Button";
 
 const Home = ( { navigation } ) => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
+    const [ recipientProfiles, setRecipientProfiles ] = useState( [] );
+    useEffect( () => {
+        fetchConversationList();
+    }, [ user?.uid ] );
+    const fetchConversationList = async () => {
+        try{
+            const chatsRef = collection( db, "chats" );
+            const conversationQuery = query( chatsRef, where( 'participants', 'array-contains', user.uid ) );
+            const conversationData = await getDocs( conversationQuery );
+            // let otherUserId = '';
+            const profiles = await Promise.all(
+                conversationData.docs.map( async ( chatDoc ) => {
+                    const chatData = chatDoc.data();
+                    // console.log(JSON.stringify(chatData.lastMessage.text, null, 2));
+                    const otherUserId = chatData.participants.find( ( id ) => id !== user.uid );
+                    // console.log(`User ID: ${ user.uid }, Other User Id: ${ otherUserId }`);
+                    if( !otherUserId ) return null;
+                    try{
+                        const userDocRef = doc( db, "users", otherUserId );
+                        const userSnapshot = await getDoc( userDocRef );
+                        if( userSnapshot.exists() ){
+                            const userData = userSnapshot.data();
+                            // console.log( JSON.stringify( userData, null, 2 ) );
+                            return{
+                                recipentId: userData.uid,
+                                recipentAvatar: userData.avatarUrl || null,
+                                recipentName: userData.displayName || 'Nudge User'
+                            };
+                        }
+                    } catch( error ){
+                        console.log( error );
+                    }
+                    return{
+                        recipentId: otherUserId,
+                        recipentAvatar: null,
+                        recipentName: 'Unknown User'
+                    };
+                } )
+            );
+            setRecipientProfiles( profiles.filter( Boolean ) );
+        } catch( error ){
+            console.log( error );
+        }
+    }
     return (
         <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
             <View style={ [
@@ -72,14 +120,72 @@ const Home = ( { navigation } ) => {
                         placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
+                <Button onPress={ () => logout() }>Logout</Button>
+                <FlatList
+                    data={ recipientProfiles }
+                    keyExtractor={ item => item.recipentId }
+                    renderItem={ ( { item } ) => (
+                            <TouchableOpacity
+                                onPress={ () => {
+                                    navigation.navigate( 'ChatScreen', {
+                                        chatId: item.chatId,
+                                        recipient: {
+                                            id: item.recipentId,
+                                            name: item.recipentName,
+                                            avatarUrl: item.recipentAvatar,
+                                        },
+                                    } );
+                                } }
+                                style={ [
+                                    styles.recipentProfile,
+                                    {
+                                        borderColor: theme.colors.border
+                                    }
+                                ] }
+                                activeOpacity={ 0.75 }
+                            >
+                                <View style={ [
+                                    styles.recipentAvatarContainer,
+                                    {
+                                        backgroundColor: theme.colors.primary
+                                    }
+                                ] }>
+                                    { item.recipentAvatar ? (
+                                        <Image source={ { uri: item.recipentAvatar } } width={ 40 } height={ 40 } resizeMethod="cover" style={ styles.recipentAvatar } />
+                                    ) : (
+                                        <Text style={ [
+                                            styles.recipentAvatarText,
+                                            {
+                                                fontFamily: theme.typography.fontFamily.medium,
+                                                color: theme.colors.text
+                                            }
+                                        ] }>
+                                            { item.recipentName ? item.recipentName[ 0 ].toUpperCase() : '?' }
+                                        </Text>
+                                    ) }
+                                </View>
+                                <Text style={ [
+                                    styles.recipentName,
+                                    {
+                                        fontFamily: theme.typography.fontFamily.semibold,
+                                        color: theme.colors.text
+                                    }
+                                ] }>
+                                    { item.recipentName }
+                                </Text>
+                            </TouchableOpacity>
+                        )
+                    }
+                    contentContainerStyle={ styles.recipentProfileContainer }
+                />
                 <TouchableOpacity
-                    style={[
+                    style={ [
                         styles.fab,
                         {
                             backgroundColor: theme.colors.accent,
                             shadowColor: theme.colors.text,
                         },
-                    ]}
+                    ] }
                     activeOpacity={ 0.85 }
                     onPress={ () => navigation.navigate( 'NewChatModal' ) }
                 >
@@ -117,7 +223,7 @@ const styles = StyleSheet.create( {
         position: 'absolute',
         right: 0,
         bottom: 0,
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderStyle: 'solid',
         borderColor: '#ffffff'
     },
@@ -158,4 +264,27 @@ const styles = StyleSheet.create( {
         shadowOpacity: 0.3,
         shadowRadius: 5,
     },
+    recipentProfile:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1
+    },
+    recipentAvatarContainer:{
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 40,
+        height: 40,
+        borderRadius: 40,
+        overflow: 'hidden'
+    },
+    recipentAvatarText:{
+        fontSize: 20,
+        lineHeight: 26
+    },
+    recipentName:{
+        fontSize: 16,
+        lineHeight: 22
+    }
 } );
