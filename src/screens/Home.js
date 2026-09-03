@@ -7,10 +7,9 @@ import { db } from "@/services/firebase";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import Input from "@/components/ui/Input";
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Button from "@/components/ui/Button";
 
 const Home = ( { navigation } ) => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const [ recipientProfiles, setRecipientProfiles ] = useState( [] );
@@ -69,6 +68,7 @@ const Home = ( { navigation } ) => {
                 <TouchableOpacity
                     hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
                     activeOpacity={ 0.75 }
+                    onPress={ () => navigation.navigate( 'Profile' ) }
                 >
                     <View style={ styles.userContainer }>
                         <View style={ [
@@ -120,7 +120,6 @@ const Home = ( { navigation } ) => {
                         placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
-                <Button onPress={ () => logout() }>Logout</Button>
                 <FlatList
                     data={ recipientProfiles }
                     keyExtractor={ item => item.recipentId }

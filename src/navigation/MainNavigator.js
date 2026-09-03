@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "@/screens/Home";
 import NewChat from "@/screens/NewChat";
 import ChatScreen from '@/screens/ChatScreen';
+import Profile from '@/screens/Profile';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +22,7 @@ export default function MainNavigator(){
             <Stack.Screen name="Home" component={ Home } />
             <Stack.Screen name="NewChatModal" component={ NewChat } />
             <Stack.Screen name="ChatScreen" component={ ChatScreen } />
+            <Stack.Screen name="Profile" component={ Profile } />
         </Stack.Navigator>
     )
 }
