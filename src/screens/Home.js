@@ -1,23 +1,113 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Button from "@/components/ui/Button";
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { db } from "@/services/firebase";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import Input from "@/components/ui/Input";
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const Home = ( { navigation } ) => {
-    const { logout } = useAuth();
+    const { user } = useAuth();
     const { theme } = useTheme();
-    const handleLogout = async () => {
+    const insets = useSafeAreaInsets();
+    const [ recipientProfiles, setRecipientProfiles ] = useState( [] );
+    useEffect( () => {
+        fetchConversationList();
+    }, [ user?.uid ] );
+    const fetchConversationList = async () => {
         try{
-            await logout();
-        } catch( err ){
-            console.log( err );
+            const chatsRef = collection( db, "chats" );
+            const conversationQuery = query( chatsRef, where( 'participants', 'array-contains', user.uid ) );
+            const conversationData = await getDocs( conversationQuery );
+            const profiles = await Promise.all(
+                conversationData.docs.map( async ( chatDoc ) => {
+                    const chatData = chatDoc.data();
+                    console.log(JSON.stringify(chatData, null, 2));
+                    const otherUserId = chatData.participants.find( ( id ) => id !== user.uid );
+                    // console.log(`User ID: ${ user.uid }, Other User Id: ${ otherUserId }`);
+                    if( !otherUserId ) return null;
+                    try{
+                        const userDocRef = doc( db, "users", otherUserId );
+                        const userSnapshot = await getDoc( userDocRef );
+                        if( userSnapshot.exists() ){
+                            const userData = userSnapshot.data();
+                            // console.log( JSON.stringify( chatDoc.id, null, 2 ) );
+                            return{
+                                chatId: chatDoc.id,
+                                recipentId: userSnapshot.id,
+                                recipentAvatar: userData.avatarUrl || null,
+                                recipentName: userData.displayName || 'Nudge User',
+                                lastMessage: chatData.lastMessage?.text || '',
+                                lastMessageTime: chatData.updatedAt || null
+                            };
+                        }
+                    } catch( error ){
+                        console.log( error );
+                    }
+                    return{
+                        chatId: chatDoc.id,
+                        recipentId: otherUserId,
+                        recipentAvatar: null,
+                        recipentName: 'Unknown User'
+                    };
+                } )
+            );
+            setRecipientProfiles( profiles.filter( Boolean ) );
+        } catch( error ){
+            console.log( error );
         }
     }
     return (
-        <SafeAreaView style={ { flex: 1 } } edges={ [ "bottom" ] }>
+        <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
+            <View style={ [
+                styles.homeHeader,
+                {
+                    paddingTop: insets.top + 12,
+                    backgroundColor: theme.colors.headerBackground
+                }
+            ] }>
+                <TouchableOpacity
+                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                    activeOpacity={ 0.75 }
+                    onPress={ () => navigation.navigate( 'Profile' ) }
+                >
+                    <View style={ styles.userContainer }>
+                        <View style={ [
+                            styles.userAvatarContainer,
+                            {
+                                borderColor: theme.colors.text
+                            }
+                        ] }>
+                            <Image
+                                source={ { uri: user?.avatarUrl } }
+                                width={ 32 }
+                                height={ 32 }
+                                resizeMode="cover"
+                                style={ styles.userAvatar }
+                            />
+                            <View style={ [
+                                styles.currentStatus,
+                                {
+                                    backgroundColor: user.isOnline ? theme.colors.success : theme.colors.danger
+                                }
+                            ] }></View>
+                        </View>
+                        <Text
+                            style={ [
+                                styles.username,
+                                {
+                                    fontFamily: theme.typography.fontFamily.bold,
+                                    color: theme.colors.text
+                                }
+                            ] }
+                        >
+                            Hi, { user?.displayName?.split( ' ' )[ 0 ] }
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
             <View style={ styles.homeContainer }>
                 <View style={ styles.searchContainer }>
                     <TouchableOpacity
@@ -33,27 +123,144 @@ const Home = ( { navigation } ) => {
                         placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
-                <Button onPress={ handleLogout }>Logout</Button>
+                <FlatList
+                    data={ recipientProfiles }
+                    keyExtractor={ item => item.chatId }
+                    renderItem={ ( { item } ) => (
+                            <TouchableOpacity
+                                onPress={ () => {
+                                    navigation.navigate( 'ChatScreen', {
+                                        chatId: item.chatId,
+                                        recipient: {
+                                            id: item.recipentId,
+                                            name: item.recipentName,
+                                            avatarUrl: item.recipentAvatar,
+                                        },
+                                    } );
+                                } }
+                                style={ [
+                                    styles.recipentProfile,
+                                    {
+                                        borderColor: theme.colors.border
+                                    }
+                                ] }
+                                activeOpacity={ 0.75 }
+                            >
+                                <View style={ [
+                                    styles.recipentAvatarContainer,
+                                    {
+                                        backgroundColor: theme.colors.primary
+                                    }
+                                ] }>
+                                    { item.recipentAvatar ? (
+                                        <Image source={ { uri: item.recipentAvatar } } width={ 40 } height={ 40 } resizeMode="cover" style={ styles.recipentAvatar } />
+                                    ) : (
+                                        <Text style={ [
+                                            styles.recipentAvatarText,
+                                            {
+                                                fontFamily: theme.typography.fontFamily.medium,
+                                                color: theme.colors.text
+                                            }
+                                        ] }>
+                                            { item.recipentName ? item.recipentName[ 0 ].toUpperCase() : '?' }
+                                        </Text>
+                                    ) }
+                                </View>
+                                <View style={ styles.messageContent }>
+                                    <View style={ styles.messageHeader }>
+                                        <Text style={ [
+                                            styles.recipentName,
+                                            {
+                                                fontFamily: theme.typography.fontFamily.semibold,
+                                                color: theme.colors.text
+                                            }
+                                        ] }>
+                                            { item.recipentName }
+                                        </Text>
+                                        <Text
+                                            style={ [
+                                                styles.time,
+                                                {
+                                                    fontFamily: theme.typography.fontFamily.regular,
+                                                    color: theme.colors.textMuted
+                                                }
+                                            ] }
+                                        >
+                                            { item.lastMessageTime ? new Date( item.lastMessageTime.seconds * 1000 ).toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } ) : '' }
+                                        </Text>
+                                    </View>
+                                    <Text
+                                        style={ [
+                                            styles.lastMessage,
+                                            {
+                                                fontFamily: theme.typography.fontFamily.regular,
+                                                color: theme.colors.textSecondary
+                                            }
+                                        ] }
+                                        numberOfLines={ 1 }
+                                        ellipsizeMode="tail"
+                                    >
+                                        { item.lastMessage || 'Started a conversation' }
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        )
+                    }
+                    contentContainerStyle={ styles.recipentProfileContainer }
+                />
                 <TouchableOpacity
-                    style={[
+                    style={ [
                         styles.fab,
                         {
                             backgroundColor: theme.colors.accent,
                             shadowColor: theme.colors.text,
                         },
-                    ]}
+                    ] }
                     activeOpacity={ 0.85 }
                     onPress={ () => navigation.navigate( 'NewChatModal' ) }
                 >
                     <Ionicons name="chatbubble-ellipses-outline" size={ 24 } color={ theme.colors.text } />
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 export default Home;
 
 const styles = StyleSheet.create( {
+    homeHeader:{
+        paddingHorizontal: 16,
+        paddingBottom: 12
+    },
+    userContainer:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    userAvatarContainer:{
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderRadius: 32,
+        position: 'relative'
+    },
+    userAvatar:{
+        borderRadius: 32,
+    },
+    currentStatus:{
+        width: 8,
+        height: 8,
+        borderRadius: 8,
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        borderWidth: 0.5,
+        borderStyle: 'solid',
+        borderColor: '#ffffff'
+    },
+    username:{
+        fontSize: 16,
+        lineHeight: 22
+    },
     homeContainer: {
         flex: 1,
         paddingHorizontal: 16,
@@ -71,9 +278,7 @@ const styles = StyleSheet.create( {
         zIndex: 1
     },
     searchInput:{
-        flex: 1,
         paddingLeft: 44,
-        width: '100%'
     },
     fab: {
         position: 'absolute',
@@ -89,4 +294,46 @@ const styles = StyleSheet.create( {
         shadowOpacity: 0.3,
         shadowRadius: 5,
     },
+    recipentProfile:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1
+    },
+    recipentAvatarContainer:{
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 40,
+        height: 40,
+        borderRadius: 40,
+        overflow: 'hidden'
+    },
+    recipentAvatarText:{
+        fontSize: 20,
+        lineHeight: 26
+    },
+    messageContent:{
+        flex: 1
+    },
+    messageHeader:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+    },
+    recipentName:{
+        fontSize: 16,
+        lineHeight: 22
+    },
+    lastMessage:{
+        flex: 1,
+        fontSize: 12,
+        lineHeight: 16,
+        marginTop: 4
+    },
+    time:{
+        flexShrink: 0,
+        fontSize: 12,
+        lineHeight: 16
+    }
 } );

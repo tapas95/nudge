@@ -49,7 +49,7 @@ export default Input;
 
 const styles = StyleSheet.create( {
     inputContainer:{
-        width: '100%'
+        flexGrow: 1
     },
     fieldContainer:{
         position: 'relative'

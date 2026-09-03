@@ -24,7 +24,8 @@ const Button = ( props ) => {
                         borderRadius: theme.radii.xl,
                         paddingHorizontal: theme.spacing.lg,
                         paddingVertical: theme.spacing.lg
-                    }
+                    },
+                    props.style
                 ] }
                 colors={ [ theme.colors.primary, theme.colors.accent ] }
                 start={ { x: 0, y: 0.5 } }

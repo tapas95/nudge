@@ -5,17 +5,24 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import * as Contacts from 'expo-contacts';
 import { useTheme } from "@/theme/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { normalizePhoneNumber } from "@/util/phone";
 import { getChatId } from "@/util/generateChatId";
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const NewChat = ( { navigation } ) => {
     const { theme } = useTheme();
     const { user: currentUser } = useAuth();
+    const insets = useSafeAreaInsets();
     const [ contacts, setContacts ] = useState( [] );
     const [ loading, setLoading ] = useState( true );
     const [ checkingUser, setCheckingUser ] = useState( false );
-    const [ selectednumber, setSelectedNumber ] = useState( '' );
+    // const [ selectednumber, setSelectedNumber ] = useState( '' );
+    // const NewChatHeader = () => {
+    //     return(
+            
+    //     )
+    // }
     useEffect( () => {
         loadDeviceContacts();
     }, [] );
@@ -126,7 +133,31 @@ const NewChat = ( { navigation } ) => {
         );
     }
     return(
-        <SafeAreaView style={ { flex: 1 } } edges={ [ 'bottom' ] }>
+        <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
+            <View style={ [
+                styles.newChatHeader,
+                {
+                    paddingTop: insets.top + 12,
+                    backgroundColor: theme.colors.headerBackground
+                }
+            ] }>
+                <TouchableOpacity
+                    onPress={ () => navigation.goBack() }
+                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                    activeOpacity={ 0.75 }
+                >
+                    <Ionicons name="arrow-back" size={ 24 } color={ theme.colors.headerText } />
+                </TouchableOpacity>
+                <Text style={ [
+                    styles.headerTitle,
+                    {
+                        fontFamily: theme.typography.fontFamily.semibold,
+                        color: theme.colors.headerText
+                    }
+                ] }>
+                    Select Contact
+                </Text>
+            </View>
             <FlatList
                 data={ contacts }
                 keyExtractor={ ( item ) => item.id }
@@ -198,12 +229,22 @@ const NewChat = ( { navigation } ) => {
                     </TouchableOpacity>
                 ) }
             />
-        </SafeAreaView>
+        </View>
     )
 }
 export default NewChat;
 
 const styles = StyleSheet.create( {
+    newChatHeader:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        paddingHorizontal: 16,
+        paddingBottom: 12
+    },
+    headerTitle:{
+        fontSize: 20
+    },
     loadingContainer:{
         flex: 1,
         alignItems: 'center',
