@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { db } from "@/services/firebase";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
@@ -14,29 +14,32 @@ const Home = ( { navigation } ) => {
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const [ recipientProfiles, setRecipientProfiles ] = useState( [] );
-    const [ loading, setLoading ] = useState( false );
+    const [ loading, setLoading ] = useState( true );
+    const [ refreshing, setRefreshing ] = useState( false );
     useEffect( () => {
         fetchConversationList();
     }, [ user?.uid ] );
     const fetchConversationList = async () => {
-        try{
+        if( !user?.uid ) return;
+        if( refreshing ){
+            setRefreshing( true );
+        } else{
             setLoading( true );
+        }
+        try{
             const chatsRef = collection( db, "chats" );
             const conversationQuery = query( chatsRef, where( 'participants', 'array-contains', user.uid ) );
             const conversationData = await getDocs( conversationQuery );
             const profiles = await Promise.all(
                 conversationData.docs.map( async ( chatDoc ) => {
                     const chatData = chatDoc.data();
-                    // console.log(JSON.stringify(chatData, null, 2));
                     const otherUserId = chatData.participants.find( ( id ) => id !== user.uid );
-                    // console.log(`User ID: ${ user.uid }, Other User Id: ${ otherUserId }`);
                     if( !otherUserId ) return null;
                     try{
                         const userDocRef = doc( db, "users", otherUserId );
                         const userSnapshot = await getDoc( userDocRef );
                         if( userSnapshot.exists() ){
                             const userData = userSnapshot.data();
-                            // console.log( JSON.stringify( chatDoc.id, null, 2 ) );
                             return{
                                 chatId: chatDoc.id,
                                 recipentId: userSnapshot.id,
@@ -62,6 +65,7 @@ const Home = ( { navigation } ) => {
             console.log( error );
         } finally{
             setLoading( false );
+            setRefreshing( false );
         }
     }
     return (
@@ -138,6 +142,27 @@ const Home = ( { navigation } ) => {
                     <FlatList
                         data={ recipientProfiles }
                         keyExtractor={ item => item.chatId }
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={ refreshing }
+                                onRefresh={ () => fetchConversationList( true ) }
+                                tintColor={ theme.colors.primary }
+                                colors={ [ theme.colors.primary ] }
+                            />
+                        }
+                        ListEmptyComponent={ 
+                            <View style={ styles.emptyContainer }>
+                                <View style={ [ styles.emptyIconWrapper, { backgroundColor: theme.colors.surface } ] }>
+                                    <Ionicons name="chatbubbles-outline" size={ 40 } color={ theme.colors.textMuted } />
+                                </View>
+                                <Text style={ [ styles.emptyTitle, { fontFamily: theme.typography.fontFamily.semibold, color: theme.colors.text } ] }>
+                                    No conversations yet
+                                </Text>
+                                <Text style={ [ styles.emptySubtitle, { fontFamily: theme.typography.fontFamily.regular, color: theme.colors.textMuted } ] }>
+                                    Tap the button below to start chatting with your contacts.
+                                </Text>
+                            </View>
+                         }
                         renderItem={ ( { item } ) => (
                                 <TouchableOpacity
                                     onPress={ () => {
