@@ -4,7 +4,7 @@ import { useTheme } from "@/theme/ThemeContext";
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { db } from "@/services/firebase";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, query, where, onSnapshot } from "firebase/firestore";
 import Input from "@/components/ui/Input";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SkeletonChatList from "@/components/ui/skeleton/SkeletonChatList";
@@ -17,57 +17,63 @@ const Home = ( { navigation } ) => {
     const [ loading, setLoading ] = useState( true );
     const [ refreshing, setRefreshing ] = useState( false );
     useEffect( () => {
-        fetchConversationList();
-    }, [ user?.uid ] );
-    const fetchConversationList = async () => {
         if( !user?.uid ) return;
-        if( refreshing ){
-            setRefreshing( true );
-        } else{
-            setLoading( true );
-        }
-        try{
-            const chatsRef = collection( db, "chats" );
-            const conversationQuery = query( chatsRef, where( 'participants', 'array-contains', user.uid ) );
-            const conversationData = await getDocs( conversationQuery );
-            const profiles = await Promise.all(
-                conversationData.docs.map( async ( chatDoc ) => {
-                    const chatData = chatDoc.data();
-                    const otherUserId = chatData.participants.find( ( id ) => id !== user.uid );
-                    if( !otherUserId ) return null;
-                    try{
-                        const userDocRef = doc( db, "users", otherUserId );
-                        const userSnapshot = await getDoc( userDocRef );
-                        if( userSnapshot.exists() ){
-                            const userData = userSnapshot.data();
-                            return{
-                                chatId: chatDoc.id,
-                                recipentId: userSnapshot.id,
-                                recipentAvatar: userData.avatarUrl || null,
-                                recipentName: userData.displayName || 'Nudge User',
-                                lastMessage: chatData.lastMessage?.text || '',
-                                lastMessageTime: chatData.updatedAt || null
-                            };
+        setLoading( true );
+        const chatsRef = collection( db, "chats" );
+        const conversationQuery = query( chatsRef, where( 'participants', 'array-contains', user.uid ) );
+        const unsubscribe = onSnapshot( conversationQuery, async ( snapshot ) => {
+            try{
+                const profiles = await Promise.all(
+                    snapshot.docs.map( async ( chatDoc ) => {
+                        const chatData = chatDoc.data();
+                        const otherUserId = chatData.participants?.find( ( id ) => id !== user.uid );
+                        if( !otherUserId ) return null;
+                        try{
+                            const userDocRef = doc( db, "users", otherUserId );
+                            const userSnapshot = await getDoc( userDocRef );
+                            if( userSnapshot.exists() ){
+                                const userData = userSnapshot.data();
+                                return{
+                                    chatId: chatDoc.id,
+                                    recipentId: userSnapshot.id,
+                                    recipentAvatar: userData.avatarUrl || null,
+                                    recipentName: userData.displayName || 'Nudge User',
+                                    lastMessage: chatData.lastMessage?.text || '',
+                                    lastMessageTime: chatData.updatedAt || null
+                                };
+                            }
+                        } catch( error ){
+                            console.log( error );
                         }
-                    } catch( error ){
-                        console.log( error );
-                    }
-                    return{
-                        chatId: chatDoc.id,
-                        recipentId: otherUserId,
-                        recipentAvatar: null,
-                        recipentName: 'Unknown User'
-                    };
-                } )
-            );
-            setRecipientProfiles( profiles.filter( Boolean ) );
-        } catch( error ){
-            console.log( error );
-        } finally{
-            setLoading( false );
-            setRefreshing( false );
-        }
-    }
+                        return{
+                            chatId: chatDoc.id,
+                            recipentId: otherUserId,
+                            recipentAvatar: null,
+                            recipentName: 'Unknown User',
+                            lastMessage: chatData.lastMessage?.text || '',
+                            lastMessageTime: chatData.updatedAt || null
+                        };
+                    } )
+                );
+                const sortedProfiles = profiles.filter( Boolean ).sort( ( a, b ) => {
+                    const timeA = a.lastMessageTime?.seconds || 0;
+                    const timeB = b.lastMessageTime?.seconds || 0;
+                    return timeB - timeA;
+                } );
+                setRecipientProfiles( sortedProfiles );
+            } catch( error ){
+                console.log( error );
+            } finally{
+                setLoading( false );
+                setRefreshing( false );
+            }
+        }, ( error ) => {
+            console.log( "Firestore snapshot error:", error );
+            setLoading(false);
+            setRefreshing(false);
+        } );
+        return () => unsubscribe();
+    }, [ user?.uid ] );
     return (
         <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
             <View style={ [
@@ -145,7 +151,12 @@ const Home = ( { navigation } ) => {
                         refreshControl={
                             <RefreshControl
                                 refreshing={ refreshing }
-                                onRefresh={ () => fetchConversationList( true ) }
+                                onRefresh={ () => {
+                                    setRefreshing( true );
+                                    setTimeout( () => {
+                                        setRefreshing( false );
+                                    }, 800 );
+                                } }
                                 tintColor={ theme.colors.primary }
                                 colors={ [ theme.colors.primary ] }
                             />
