@@ -7,24 +7,27 @@ import { db } from "@/services/firebase";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import Input from "@/components/ui/Input";
 import Ionicons from '@expo/vector-icons/Ionicons';
+import SkeletonChatList from "@/components/ui/skeleton/SkeletonChatList";
 
 const Home = ( { navigation } ) => {
     const { user } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const [ recipientProfiles, setRecipientProfiles ] = useState( [] );
+    const [ loading, setLoading ] = useState( false );
     useEffect( () => {
         fetchConversationList();
     }, [ user?.uid ] );
     const fetchConversationList = async () => {
         try{
+            setLoading( true );
             const chatsRef = collection( db, "chats" );
             const conversationQuery = query( chatsRef, where( 'participants', 'array-contains', user.uid ) );
             const conversationData = await getDocs( conversationQuery );
             const profiles = await Promise.all(
                 conversationData.docs.map( async ( chatDoc ) => {
                     const chatData = chatDoc.data();
-                    console.log(JSON.stringify(chatData, null, 2));
+                    // console.log(JSON.stringify(chatData, null, 2));
                     const otherUserId = chatData.participants.find( ( id ) => id !== user.uid );
                     // console.log(`User ID: ${ user.uid }, Other User Id: ${ otherUserId }`);
                     if( !otherUserId ) return null;
@@ -57,6 +60,8 @@ const Home = ( { navigation } ) => {
             setRecipientProfiles( profiles.filter( Boolean ) );
         } catch( error ){
             console.log( error );
+        } finally{
+            setLoading( false );
         }
     }
     return (
@@ -123,91 +128,99 @@ const Home = ( { navigation } ) => {
                         placeholderTextColor={ theme.colors.textMuted }
                     />
                 </View>
-                <FlatList
-                    data={ recipientProfiles }
-                    keyExtractor={ item => item.chatId }
-                    renderItem={ ( { item } ) => (
-                            <TouchableOpacity
-                                onPress={ () => {
-                                    navigation.navigate( 'ChatScreen', {
-                                        chatId: item.chatId,
-                                        recipient: {
-                                            id: item.recipentId,
-                                            name: item.recipentName,
-                                            avatarUrl: item.recipentAvatar,
-                                        },
-                                    } );
-                                } }
-                                style={ [
-                                    styles.recipentProfile,
-                                    {
-                                        borderColor: theme.colors.border
-                                    }
-                                ] }
-                                activeOpacity={ 0.75 }
-                            >
-                                <View style={ [
-                                    styles.recipentAvatarContainer,
-                                    {
-                                        backgroundColor: theme.colors.primary
-                                    }
-                                ] }>
-                                    { item.recipentAvatar ? (
-                                        <Image source={ { uri: item.recipentAvatar } } width={ 40 } height={ 40 } resizeMode="cover" style={ styles.recipentAvatar } />
-                                    ) : (
-                                        <Text style={ [
-                                            styles.recipentAvatarText,
-                                            {
-                                                fontFamily: theme.typography.fontFamily.medium,
-                                                color: theme.colors.text
-                                            }
-                                        ] }>
-                                            { item.recipentName ? item.recipentName[ 0 ].toUpperCase() : '?' }
-                                        </Text>
-                                    ) }
-                                </View>
-                                <View style={ styles.messageContent }>
-                                    <View style={ styles.messageHeader }>
-                                        <Text style={ [
-                                            styles.recipentName,
-                                            {
-                                                fontFamily: theme.typography.fontFamily.semibold,
-                                                color: theme.colors.text
-                                            }
-                                        ] }>
-                                            { item.recipentName }
-                                        </Text>
+                { loading ? (
+                    <View>
+                        { [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map( ( key ) => (
+                            <SkeletonChatList key={ key } />
+                        ) ) }
+                    </View>
+                ) : (
+                    <FlatList
+                        data={ recipientProfiles }
+                        keyExtractor={ item => item.chatId }
+                        renderItem={ ( { item } ) => (
+                                <TouchableOpacity
+                                    onPress={ () => {
+                                        navigation.navigate( 'ChatScreen', {
+                                            chatId: item.chatId,
+                                            recipient: {
+                                                id: item.recipentId,
+                                                name: item.recipentName,
+                                                avatarUrl: item.recipentAvatar,
+                                            },
+                                        } );
+                                    } }
+                                    style={ [
+                                        styles.recipentProfile,
+                                        {
+                                            borderColor: theme.colors.border
+                                        }
+                                    ] }
+                                    activeOpacity={ 0.75 }
+                                >
+                                    <View style={ [
+                                        styles.recipentAvatarContainer,
+                                        {
+                                            backgroundColor: theme.colors.primary
+                                        }
+                                    ] }>
+                                        { item.recipentAvatar ? (
+                                            <Image source={ { uri: item.recipentAvatar } } width={ 40 } height={ 40 } resizeMode="cover" style={ styles.recipentAvatar } />
+                                        ) : (
+                                            <Text style={ [
+                                                styles.recipentAvatarText,
+                                                {
+                                                    fontFamily: theme.typography.fontFamily.medium,
+                                                    color: theme.colors.text
+                                                }
+                                            ] }>
+                                                { item.recipentName ? item.recipentName[ 0 ].toUpperCase() : '?' }
+                                            </Text>
+                                        ) }
+                                    </View>
+                                    <View style={ styles.messageContent }>
+                                        <View style={ styles.messageHeader }>
+                                            <Text style={ [
+                                                styles.recipentName,
+                                                {
+                                                    fontFamily: theme.typography.fontFamily.semibold,
+                                                    color: theme.colors.text
+                                                }
+                                            ] }>
+                                                { item.recipentName }
+                                            </Text>
+                                            <Text
+                                                style={ [
+                                                    styles.time,
+                                                    {
+                                                        fontFamily: theme.typography.fontFamily.regular,
+                                                        color: theme.colors.textMuted
+                                                    }
+                                                ] }
+                                            >
+                                                { item.lastMessageTime ? new Date( item.lastMessageTime.seconds * 1000 ).toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } ) : '' }
+                                            </Text>
+                                        </View>
                                         <Text
                                             style={ [
-                                                styles.time,
+                                                styles.lastMessage,
                                                 {
                                                     fontFamily: theme.typography.fontFamily.regular,
-                                                    color: theme.colors.textMuted
+                                                    color: theme.colors.textSecondary
                                                 }
                                             ] }
+                                            numberOfLines={ 1 }
+                                            ellipsizeMode="tail"
                                         >
-                                            { item.lastMessageTime ? new Date( item.lastMessageTime.seconds * 1000 ).toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } ) : '' }
+                                            { item.lastMessage || 'Started a conversation' }
                                         </Text>
                                     </View>
-                                    <Text
-                                        style={ [
-                                            styles.lastMessage,
-                                            {
-                                                fontFamily: theme.typography.fontFamily.regular,
-                                                color: theme.colors.textSecondary
-                                            }
-                                        ] }
-                                        numberOfLines={ 1 }
-                                        ellipsizeMode="tail"
-                                    >
-                                        { item.lastMessage || 'Started a conversation' }
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        )
-                    }
-                    contentContainerStyle={ styles.recipentProfileContainer }
-                />
+                                </TouchableOpacity>
+                            )
+                        }
+                        contentContainerStyle={ styles.recipentProfileContainer }
+                    />
+                ) }
                 <TouchableOpacity
                     style={ [
                         styles.fab,
