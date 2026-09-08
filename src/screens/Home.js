@@ -16,6 +16,7 @@ const Home = ( { navigation } ) => {
     const [ recipientProfiles, setRecipientProfiles ] = useState( [] );
     const [ loading, setLoading ] = useState( true );
     const [ refreshing, setRefreshing ] = useState( false );
+    const [ searchQuery, setSearchQuery ] = useState( '' );
     useEffect( () => {
         if( !user?.uid ) return;
         setLoading( true );
@@ -74,6 +75,14 @@ const Home = ( { navigation } ) => {
         } );
         return () => unsubscribe();
     }, [ user?.uid ] );
+    const displayProfiles = recipientProfiles.filter( ( profile ) => {
+        const query = searchQuery.trim().toLowerCase();
+        if( !query ) return true;
+        console.log( profile );
+        const nameMatch = profile.recipentName?.toLowerCase().includes( query );
+        const messageMatch = profile.lastMessage?.toLowerCase().includes( query );
+        return nameMatch || messageMatch;
+    } );
     return (
         <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
             <View style={ [
@@ -136,6 +145,8 @@ const Home = ( { navigation } ) => {
                         placeholder="Search messages or people"
                         style={ styles.searchInput }
                         placeholderTextColor={ theme.colors.textMuted }
+                        onChangeText={ setSearchQuery }
+                        value={ searchQuery }
                     />
                 </View>
                 { loading ? (
@@ -146,7 +157,7 @@ const Home = ( { navigation } ) => {
                     </View>
                 ) : (
                     <FlatList
-                        data={ recipientProfiles }
+                        data={ displayProfiles }
                         keyExtractor={ item => item.chatId }
                         refreshControl={
                             <RefreshControl
@@ -163,14 +174,14 @@ const Home = ( { navigation } ) => {
                         }
                         ListEmptyComponent={ 
                             <View style={ styles.emptyContainer }>
-                                <View style={ [ styles.emptyIconWrapper, { backgroundColor: theme.colors.surface } ] }>
+                                <View style={ styles.emptyIconWrapper }>
                                     <Ionicons name="chatbubbles-outline" size={ 40 } color={ theme.colors.textMuted } />
                                 </View>
                                 <Text style={ [ styles.emptyTitle, { fontFamily: theme.typography.fontFamily.semibold, color: theme.colors.text } ] }>
-                                    No conversations yet
+                                    { searchQuery ? 'No results found' : 'No conversations yet' }
                                 </Text>
                                 <Text style={ [ styles.emptySubtitle, { fontFamily: theme.typography.fontFamily.regular, color: theme.colors.textMuted } ] }>
-                                    Tap the button below to start chatting with your contacts.
+                                    { searchQuery ? `No chat match ${ searchQuery }. Try a different name or keyword.` : 'Tap the button below to start chatting with your contacts.' }
                                 </Text>
                             </View>
                          }
@@ -343,6 +354,9 @@ const styles = StyleSheet.create( {
         shadowOpacity: 0.3,
         shadowRadius: 5,
     },
+    recipentProfileContainer:{
+        flexGrow: 1
+    },
     recipentProfile:{
         flexDirection: 'row',
         alignItems: 'center',
@@ -384,5 +398,15 @@ const styles = StyleSheet.create( {
         flexShrink: 0,
         fontSize: 12,
         lineHeight: 16
+    },
+    emptyContainer:{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12
+    },
+    emptyTitle:{
+        fontSize: 18,
+        lineHeight: 24
     }
 } );
