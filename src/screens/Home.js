@@ -40,7 +40,8 @@ const Home = ( { navigation } ) => {
                                     recipentAvatar: userData.avatarUrl || null,
                                     recipentName: userData.displayName || 'Nudge User',
                                     lastMessage: chatData.lastMessage?.text || '',
-                                    lastMessageTime: chatData.updatedAt || null
+                                    lastMessageTime: chatData.updatedAt || null,
+                                    phoneNumber: userData.phoneNumber || null
                                 };
                             }
                         } catch( error ){
@@ -52,7 +53,8 @@ const Home = ( { navigation } ) => {
                             recipentAvatar: null,
                             recipentName: 'Unknown User',
                             lastMessage: chatData.lastMessage?.text || '',
-                            lastMessageTime: chatData.updatedAt || null
+                            lastMessageTime: chatData.updatedAt || null,
+                            phoneNumber: chatData.phoneNumber || null
                         };
                     } )
                 );
@@ -78,7 +80,6 @@ const Home = ( { navigation } ) => {
     const displayProfiles = recipientProfiles.filter( ( profile ) => {
         const query = searchQuery.trim().toLowerCase();
         if( !query ) return true;
-        console.log( profile );
         const nameMatch = profile.recipentName?.toLowerCase().includes( query );
         const messageMatch = profile.lastMessage?.toLowerCase().includes( query );
         return nameMatch || messageMatch;
@@ -194,6 +195,7 @@ const Home = ( { navigation } ) => {
                                                 id: item.recipentId,
                                                 name: item.recipentName,
                                                 avatarUrl: item.recipentAvatar,
+                                                phoneNumber: item.phoneNumber
                                             },
                                         } );
                                     } }

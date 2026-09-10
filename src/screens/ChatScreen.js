@@ -11,10 +11,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 const ChatScreen = ( { route, navigation } ) => {
     const { chatId, recipient } = route.params || null;
-    console.log(JSON.stringify(recipient, null, 2))
     const { theme } = useTheme();
     const { user: currentUser } = useAuth();
-    // console.log(JSON.stringify(currentUser, null, 2));
     const insets = useSafeAreaInsets();
     const [ message, setMessage ] = useState( '' );
     const [ messages, setMessages ] = useState( [] );
@@ -131,6 +129,20 @@ const ChatScreen = ( { route, navigation } ) => {
                         </Text>
                     </View>
                 </View>
+                <View style={ styles.actionContainer }>
+                    <TouchableOpacity
+                        hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                        activeOpacity={ 0.75 }
+                    >
+                        <Ionicons name="videocam-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                        activeOpacity={ 0.75 }
+                    >
+                        <Ionicons name="call-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                    </TouchableOpacity>
+                </View>
             </View>
             <View style={ { flex: 1, backgroundColor: theme.colors.chatBackground } }>
                 <KeyboardAvoidingView
@@ -151,6 +163,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                     keyExtractor={ item => item.id }
                                     inverted
                                     contentContainerStyle={ styles.messagesList }
+                                    showsVerticalScrollIndicator={ false }
                                     renderItem={ ( { item } ) => {
                                         const isMe = item.senderId === currentUser?.uid;
                                         const formattedTime = formatMessageTime( item.createdAt );
@@ -249,6 +262,12 @@ const styles = StyleSheet.create( {
     userNumber:{
         fontSize: 12,
         lineHeight: 18
+    },
+    actionContainer:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        marginLeft: 'auto'
     },
     chatWrapper:{
         flex: 1,
