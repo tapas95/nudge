@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, Image, Alert, TouchableOpacity } from "react-native";
 import { db } from "@/services/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import * as Contacts from 'expo-contacts';
+import * as Contacts from 'expo-contacts/legacy';
 import { useTheme } from "@/theme/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,12 +17,6 @@ const NewChat = ( { navigation } ) => {
     const [ contacts, setContacts ] = useState( [] );
     const [ loading, setLoading ] = useState( true );
     const [ checkingUser, setCheckingUser ] = useState( false );
-    // const [ selectednumber, setSelectedNumber ] = useState( '' );
-    // const NewChatHeader = () => {
-    //     return(
-            
-    //     )
-    // }
     useEffect( () => {
         loadDeviceContacts();
     }, [] );

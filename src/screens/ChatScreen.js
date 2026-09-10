@@ -13,7 +13,6 @@ const ChatScreen = ( { route, navigation } ) => {
     const { chatId, recipient } = route.params || null;
     const { theme } = useTheme();
     const { user: currentUser } = useAuth();
-    // console.log(JSON.stringify(currentUser, null, 2));
     const insets = useSafeAreaInsets();
     const [ message, setMessage ] = useState( '' );
     const [ messages, setMessages ] = useState( [] );
