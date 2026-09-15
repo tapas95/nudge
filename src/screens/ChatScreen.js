@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
 import { db } from "@/services/firebase";
-import { collection, addDoc, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
-import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity } from "react-native";
+import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Clipboard from 'expo-clipboard';
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Octicons from '@expo/vector-icons/Octicons';
 
 const ChatScreen = ( { route, navigation } ) => {
     const { chatId, recipient } = route.params || null;
@@ -16,6 +18,7 @@ const ChatScreen = ( { route, navigation } ) => {
     const insets = useSafeAreaInsets();
     const [ message, setMessage ] = useState( '' );
     const [ messages, setMessages ] = useState( [] );
+    const [ selectedMessages, setSelectedMessages ] = useState( null );
     const handleSendMessage = async () => {
         const messageToSend = message.trim();
         if( !messageToSend || !chatId ) return;
@@ -71,6 +74,56 @@ const ChatScreen = ( { route, navigation } ) => {
             return '';
         }
     };
+    const handleMessageLongPress = ( item, isMe ) => {
+        setSelectedMessages( item );
+    }
+    const handleCopyMessageText = async () => {
+        if( selectedMessages?.text ){
+            await Clipboard.setStringAsync( selectedMessages.text );
+        }
+        // console.log( JSON.stringify( selectedMessages.text, null, 2 ) );
+        setSelectedMessages( null );
+    }
+    const handleDeleteMessageText = () => {
+        if( !selectedMessages ) return;
+        Alert.alert(
+            'Delete Message',
+            'Are you sure you want to delete this message?',
+            [ 
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Delete',
+                    style: 'default',
+                    onPress: async () => {
+                        // console.log( `Message Deleted: ${ JSON.stringify( selectedMessages, null, 4 ) }` );
+                        const messageIdToDelete = selectedMessages.id;
+                        try{
+                            const messageRef = doc( db, "chats", chatId, "messages", messageIdToDelete );
+                            await deleteDoc( messageRef );
+                            setSelectedMessages( null );
+                        } catch( error ){
+                            console.error( "Error deleting message:", error );
+                            Alert.alert( "Error", "Failed to delete the message." );
+                        }
+                    }
+                }
+            ]
+        )
+    }
+    useEffect( () => {
+        const onBackPress = () => {
+            if( selectedMessages ){
+                setSelectedMessages( null );
+                return true;
+            }
+            return false;
+        }
+        const backHandler = BackHandler.addEventListener( 'hardwareBackPress', onBackPress );
+        return () => backHandler.remove();
+    }, [ selectedMessages ] );
     return(
         <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
             <View style={ [
@@ -130,18 +183,47 @@ const ChatScreen = ( { route, navigation } ) => {
                     </View>
                 </View>
                 <View style={ styles.actionContainer }>
-                    <TouchableOpacity
-                        hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                        activeOpacity={ 0.75 }
-                    >
-                        <Ionicons name="videocam-outline" size={ 24 } color={ theme.colors.textSecondary } />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                        activeOpacity={ 0.75 }
-                    >
-                        <Ionicons name="call-outline" size={ 24 } color={ theme.colors.textSecondary } />
-                    </TouchableOpacity>
+                    { selectedMessages ? (
+                        <>
+                            <TouchableOpacity
+                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                activeOpacity={ 0.75 }
+                                onPress={ handleCopyMessageText }
+                            >
+                                <Ionicons name="copy-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                activeOpacity={ 0.75 }
+                            >
+                                <Octicons name="reply" size={ 24 } color={ theme.colors.textSecondary } />
+                            </TouchableOpacity>
+                            { selectedMessages?.senderId === currentUser?.uid && (
+                                <TouchableOpacity
+                                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                    activeOpacity={ 0.75 }
+                                    onPress={ handleDeleteMessageText }
+                                >
+                                    <Ionicons name="trash-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                                </TouchableOpacity>
+                            ) }
+                        </>
+                    ) : (
+                        <>
+                            <TouchableOpacity
+                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                activeOpacity={ 0.75 }
+                            >
+                                <Ionicons name="videocam-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                activeOpacity={ 0.75 }
+                            >
+                                <Ionicons name="call-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                            </TouchableOpacity>
+                        </>
+                    ) }
                 </View>
             </View>
             <View style={ { flex: 1, backgroundColor: theme.colors.chatBackground } }>
@@ -166,14 +248,28 @@ const ChatScreen = ( { route, navigation } ) => {
                                     showsVerticalScrollIndicator={ false }
                                     renderItem={ ( { item } ) => {
                                         const isMe = item.senderId === currentUser?.uid;
+                                        const isSelected = selectedMessages?.id === item.id;
                                         const formattedTime = formatMessageTime( item.createdAt );
                                         return(
-                                            <View style={ [
-                                                styles.messageContainer,
-                                                {
-                                                    alignItems: isMe ? 'flex-end' : 'flex-start'
-                                                }
-                                            ] }>
+                                            <TouchableOpacity
+                                                onLongPress={ () => handleMessageLongPress( item, isMe ) }
+                                                onPress={ () => {
+                                                    if( selectedMessages ){
+                                                        setSelectedMessages( isSelected ? null : item );
+                                                    }
+                                                } }
+                                                delayLongPress={ 250 }
+                                                activeOpacity={ 0.75 }
+                                                style={ [
+                                                    styles.messageContainer,
+                                                    {
+                                                        alignItems: isMe ? 'flex-end' : 'flex-start',
+                                                        padding: isSelected ? 6 : null,
+                                                        backgroundColor: isSelected ? theme.colors.primaryMuted : null,
+                                                        borderRadius: isSelected ? 6 : null
+                                                    }
+                                                ] }
+                                            >
                                                 <View style={ [
                                                     styles.messageBubble,
                                                     {
@@ -203,7 +299,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                                         { formattedTime }
                                                     </Text>
                                                 ) : null }
-                                            </View>
+                                            </TouchableOpacity>
                                         )
                                     } }
                                 />
