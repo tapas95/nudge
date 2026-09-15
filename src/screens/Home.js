@@ -132,8 +132,6 @@ const Home = ( { navigation } ) => {
                         </Text>
                     </View>
                 </TouchableOpacity>
-            </View>
-            <View style={ styles.homeContainer }>
                 <View style={ styles.searchContainer }>
                     <TouchableOpacity
                         style={ styles.iconContainer }
@@ -150,6 +148,8 @@ const Home = ( { navigation } ) => {
                         value={ searchQuery }
                     />
                 </View>
+            </View>
+            <View style={ styles.homeContainer }>
                 { loading ? (
                     <View>
                         { [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map( ( key ) => (
@@ -270,19 +270,6 @@ const Home = ( { navigation } ) => {
                         contentContainerStyle={ styles.recipentProfileContainer }
                     />
                 ) }
-                <TouchableOpacity
-                    style={ [
-                        styles.fab,
-                        {
-                            backgroundColor: theme.colors.accent,
-                            shadowColor: theme.colors.text,
-                        },
-                    ] }
-                    activeOpacity={ 0.85 }
-                    onPress={ () => navigation.navigate( 'NewChatModal' ) }
-                >
-                    <Ionicons name="chatbubble-ellipses-outline" size={ 24 } color={ theme.colors.text } />
-                </TouchableOpacity>
             </View>
         </View>
     );
@@ -332,7 +319,8 @@ const styles = StyleSheet.create( {
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        position: 'relative'
+        position: 'relative',
+        marginTop: 12
     },
     iconContainer:{
         position: 'absolute',

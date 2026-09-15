@@ -12,15 +12,15 @@ const BottomTabs = createBottomTabNavigator();
 const BottomTabNavigator = () => {
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
-    // console.log(insets);
     return(
         <BottomTabs.Navigator
-            screenOptions={ ( { route } ) => ( { 
+            initialRouteName="Home"
+            screenOptions={ ( { route } ) => ( {
                 headerShown: false,
                 animation: 'shift',
                 tabBarActiveTintColor: theme.colors.primary,
                 tabBarInactiveTintColor: theme.colors.textSecondary,
-                tabBarActiveBackgroundColor: theme.colors.primaryMuted,
+                // tabBarActiveBackgroundColor: theme.colors.primaryMuted,
                 tabBarHideOnKeyboard: true,
                 tabBarStyle: {
                     backgroundColor: theme.colors.headerBackground,
@@ -30,7 +30,8 @@ const BottomTabNavigator = () => {
                     borderTopColor: theme.colors.border
                 },
                 tabBarItemStyle: {
-                    
+                    flexDirection: 'row',
+                    alignSelf: 'center'
                  },
                 tabBarLabelStyle: {
                     fontFamily: theme.typography.fontFamily.semibold,

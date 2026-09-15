@@ -9,7 +9,7 @@ const Profile = ( { navigation } ) => {
     const { user, logout } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
-    console.log( JSON.stringify( user, null, 2 ) );
+    // console.log( JSON.stringify( user, null, 2 ) );
     return (
         <View style={ styles.profileWrapper }>
             <View style={ [
@@ -19,13 +19,6 @@ const Profile = ( { navigation } ) => {
                     backgroundColor: theme.colors.headerBackground
                 }
             ] }>
-                <TouchableOpacity
-                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                    activeOpacity={ 0.75 }
-                    onPress={ () => navigation.goBack() }
-                >
-                    <Ionicons name="arrow-back-outline" size={ 24 } color={ theme.colors.text } />
-                </TouchableOpacity>
                 <Text style={ [
                     styles.headerTitle,
                     {
