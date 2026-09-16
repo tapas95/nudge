@@ -122,6 +122,11 @@ const ChatScreen = ( { route, navigation } ) => {
         const backHandler = BackHandler.addEventListener( 'hardwareBackPress', onBackPress );
         return () => backHandler.remove();
     }, [ selectedMessages ] );
+    useEffect( () => {
+        navigation.setOptions( {
+            gestureEnabled: !selectedMessages
+        } )
+    }, [ selectedMessages, navigation ] );
     return(
         <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
             <View style={ [
@@ -132,7 +137,7 @@ const ChatScreen = ( { route, navigation } ) => {
                 }
             ] }>
                 <TouchableOpacity
-                    onPress={ () => navigation.goBack() }
+                    onPress={ () => selectedMessages ? setSelectedMessages( null ) : navigation.goBack() }
                     hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
                     activeOpacity={ 0.75 }
                 >
