@@ -81,11 +81,11 @@ const ChatScreen = ( { route, navigation } ) => {
         if( selectedMessages?.text ){
             await Clipboard.setStringAsync( selectedMessages.text );
         }
-        // console.log( JSON.stringify( selectedMessages.text, null, 2 ) );
         setSelectedMessages( null );
     }
     const handleDeleteMessageText = () => {
         if( !selectedMessages ) return;
+        setSelectedMessages( null );
         Alert.alert(
             'Delete Message',
             'Are you sure you want to delete this message?',
@@ -98,12 +98,10 @@ const ChatScreen = ( { route, navigation } ) => {
                     text: 'Delete',
                     style: 'default',
                     onPress: async () => {
-                        // console.log( `Message Deleted: ${ JSON.stringify( selectedMessages, null, 4 ) }` );
                         const messageIdToDelete = selectedMessages.id;
                         try{
                             const messageRef = doc( db, "chats", chatId, "messages", messageIdToDelete );
                             await deleteDoc( messageRef );
-                            setSelectedMessages( null );
                         } catch( error ){
                             console.error( "Error deleting message:", error );
                             Alert.alert( "Error", "Failed to delete the message." );
