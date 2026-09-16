@@ -3,13 +3,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
 import { db } from "@/services/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
-import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert } from "react-native";
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
-import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
+import Entypo from '@expo/vector-icons/Entypo';
 
 const ChatScreen = ( { route, navigation } ) => {
     const { chatId, recipient } = route.params || null;
@@ -19,10 +19,17 @@ const ChatScreen = ( { route, navigation } ) => {
     const [ message, setMessage ] = useState( '' );
     const [ messages, setMessages ] = useState( [] );
     const [ selectedMessages, setSelectedMessages ] = useState( null );
+    const [ replyMessage, setReplyMessage ] = useState( null );
     const handleSendMessage = async () => {
         const messageToSend = message.trim();
         if( !messageToSend || !chatId ) return;
+        const currentReply = replyMessage ? {
+            id: replyMessage.id,
+            text: replyMessage.text,
+            senderId: replyMessage.senderId,
+        } : null;
         setMessage( '' );
+        setReplyMessage( null );
         try{
             const messagesRef = collection( db, "chats", chatId, "messages" );
             const chatDocRef = doc( db, "chats", chatId );
@@ -31,6 +38,7 @@ const ChatScreen = ( { route, navigation } ) => {
                 senderId: currentUser.uid,
                 receiverId: recipient.id,
                 createdAt: serverTimestamp(),
+                replyTo: currentReply
             } );
             await setDoc( chatDocRef, {
                 chatId,
@@ -46,8 +54,6 @@ const ChatScreen = ( { route, navigation } ) => {
         );
         } catch( error ){
             console.error( "Error sending message:", error );
-        } finally{
-
         }
     }
     useEffect( () => {
@@ -115,6 +121,10 @@ const ChatScreen = ( { route, navigation } ) => {
         const onBackPress = () => {
             if( selectedMessages ){
                 setSelectedMessages( null );
+                return true;
+            }
+            if( replyMessage ){
+                setReplyMessage( false );
                 return true;
             }
             return false;
@@ -198,6 +208,10 @@ const ChatScreen = ( { route, navigation } ) => {
                             <TouchableOpacity
                                 hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
                                 activeOpacity={ 0.75 }
+                                onPress={ () => {
+                                    setReplyMessage( selectedMessages );
+                                    setSelectedMessages( null );
+                                } }
                             >
                                 <Octicons name="reply" size={ 24 } color={ theme.colors.textSecondary } />
                             </TouchableOpacity>
@@ -281,6 +295,40 @@ const ChatScreen = ( { route, navigation } ) => {
                                                         borderBottomLeftRadius: isMe ? 12 : 0
                                                     }
                                                 ] }>
+                                                    { item.replyTo && (
+                                                        <View
+                                                            style={ [
+                                                                styles.replyBubble,
+                                                                {
+                                                                    backgroundColor: isMe ? 'rgba( 255, 255, 255, 0.1 )' : theme.colors.primaryMuted,
+                                                                    borderRadius: theme.radii.sm,
+                                                                    borderColor: isMe ? theme.colors.text : theme.colors.primary
+                                                                }
+                                                            ] }
+                                                        >
+                                                            <Text
+                                                                style={ [
+                                                                    {
+                                                                        fontFamily: theme.typography.fontFamily.medium,
+                                                                        color: isMe ? theme.colors.text : theme.colors.primary
+                                                                    }
+                                                                ] }
+                                                            >
+                                                                { item.replyTo.senderId === currentUser.uid ? 'You' : recipient?.name || 'Unknown' }
+                                                            </Text>
+                                                            <Text
+                                                                style={ [
+                                                                    styles.replyBubbleText,
+                                                                    {
+                                                                        fontFamily: theme.typography.fontFamily.regular,
+                                                                        color: theme.colors.textSecondary
+                                                                    }
+                                                                ] }
+                                                            >
+                                                                { item.replyTo.text }
+                                                            </Text>
+                                                        </View>
+                                                    ) }
                                                     <Text style={ [
                                                         styles.messageText,
                                                         {
@@ -309,13 +357,74 @@ const ChatScreen = ( { route, navigation } ) => {
                             ) }
                         </View>
                         <View style={ styles.chatActionContainer }>
-                            <Input
-                                placeholder="Type a message..."
-                                multiline
-                                resizeMode={ true }
-                                value={ message }
-                                onChangeText={ setMessage }
-                            />
+                            <View
+                                style={ [
+                                    styles.messageInputContainer,
+                                    {
+                                        backgroundColor: theme.colors.headerBackground,
+                                        borderColor: theme.colors.border,
+                                        borderRadius: theme.radii.xl
+                                    }
+                                ] }
+                            >
+                                { replyMessage && (
+                                    <View
+                                        style={ [
+                                            styles.replyMessageContainer,
+                                            {
+                                                backgroundColor: theme.colors.primaryMuted,
+                                                borderColor: theme.colors.primary,
+                                                borderRadius: theme.radii.lg
+                                            }
+                                        ] }
+                                    >
+                                        <Text
+                                            style={ [
+                                                styles.replyMessageText,
+                                                {
+                                                    fontFamily: theme.typography.fontFamily.regular,
+                                                    color: theme.colors.text
+                                                }
+                                            ] }
+                                        >
+                                            { replyMessage.text }
+                                        </Text>
+                                        <TouchableOpacity
+                                            hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
+                                            activeOpacity={ 0.75 }
+                                            onPress={ () => {
+                                                setReplyMessage( null );
+                                            } }
+                                        >
+                                            <Ionicons name="close-outline" size={ 18 } color={ theme.colors.textSecondary } />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) }
+                                <View style={ styles.messageInputInnerContainer }>
+                                    <TouchableOpacity
+                                        hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
+                                        activeOpacity={ 0.75 }
+                                        style={ styles.emojiButton }
+                                    >
+                                        <Entypo name="emoji-happy" size={ 20 } color={ theme.colors.textSecondary } />
+                                    </TouchableOpacity>
+                                    <TextInput
+                                        placeholder="Type a message..."
+                                        placeholderTextColor={ theme.colors.textMuted }
+                                        multiline
+                                        resizeMode={ true }
+                                        value={ message }
+                                        onChangeText={ setMessage }
+                                        style={ [ 
+                                            styles.messageInput,
+                                            {
+                                                fontFamily: theme.typography.fontFamily.regular,
+                                                color: theme.colors.text
+                                            }
+                                        ] }
+                                    />
+                                </View>
+                            </View>
                             <Button
                                 style={ styles.sendBtn }
                                 onPress={ handleSendMessage }
@@ -396,10 +505,53 @@ const styles = StyleSheet.create( {
         fontSize: 12,
         lineHeight: 14
     },
+    replyBubble:{
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        marginBottom: 4,
+        borderLeftWidth: 3
+    },
+    replyBubbleText:{
+        fontStyle: 'italic'
+    },
     chatActionContainer:{
         flexDirection: 'row',
         alignItems: 'flex-end',
         gap: 8
+    },
+    messageInputContainer:{
+        flex: 1,
+        padding: 8,
+        borderWidth: 1
+    },
+    messageInputInnerContainer:{
+        flexGrow: 1,
+        flexDirection: 'row',
+        gap: 12
+    },
+    replyMessageContainer:{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderLeftWidth: 4,
+        marginBottom: 8
+    },
+    replyMessageText:{
+        flexGrow: 1,
+        fontSize: 12,
+        lineHeight: 18,
+        fontStyle: 'italic'
+    },
+    emojiButton:{
+        alignSelf: 'flex-end'
+    },
+    messageInput:{
+        flex: 1,
+        maxHeight: 250,
+        fontSize: 14,
+        lineHeight: 20,
+        padding: 0
     },
     sendBtn:{
         padding: 0,
