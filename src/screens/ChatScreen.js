@@ -6,6 +6,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, ord
 import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
+import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,10 +20,27 @@ const ChatScreen = ( { route, navigation } ) => {
     const [ message, setMessage ] = useState( '' );
     const [ messages, setMessages ] = useState( [] );
     const [ selectedMessages, setSelectedMessages ] = useState( null );
+    const player = useAudioPlayer( require( '../../assets/message-sent-sound.wav' ) );
+    useEffect( () => {
+        setAudioModeAsync( {
+            playsInSilentMode: true
+        } ).catch( error => console.warn( "Failed to set audio mode:", error ) )
+    }, [] );
+    const playSound = () => {
+        if( player ){
+            try{
+                player.seekTo( 0 );
+                player.play();
+            } catch( audioError ){
+                console.warn( "Send chime failed:", audioError );
+            }
+        }
+    }
     const handleSendMessage = async () => {
         const messageToSend = message.trim();
         if( !messageToSend || !chatId ) return;
         setMessage( '' );
+        playSound();
         try{
             const messagesRef = collection( db, "chats", chatId, "messages" );
             const chatDocRef = doc( db, "chats", chatId );
@@ -47,7 +65,7 @@ const ChatScreen = ( { route, navigation } ) => {
         } catch( error ){
             console.error( "Error sending message:", error );
         } finally{
-
+            
         }
     }
     useEffect( () => {
