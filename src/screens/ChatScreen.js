@@ -7,7 +7,7 @@ import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
 import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
-import EmojiPicker from 'rn-emoji-keyboard';
+import { EmojiKeyboard } from 'rn-emoji-keyboard';
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
@@ -462,11 +462,34 @@ const ChatScreen = ( { route, navigation } ) => {
                     </KeyboardAvoidingView>
                 </View>
             </View>
-            <EmojiPicker
-                open={ isEmojiPickerOpen }
-                onClose={ () => setIsEmojiPickerOpen( false ) }
-                onEmojiSelected={ handleOnEmojiSelected }
-            />
+            { isEmojiPickerOpen &&
+                <EmojiKeyboard
+                    onEmojiSelected={ handleOnEmojiSelected }
+                    enableSearchBar
+                    allowMultipleSelections
+                    enableRecentlyUsed
+                    categoryPosition="top"
+                    emojiSize={ 30 }
+                    hideSearchBarClearIcon={ true }
+                    theme={ {
+                        container: theme.colors.background,
+                        header: theme.colors.text,
+                        knob: theme.colors.primaryMuted,
+                        category: {
+                            icon: theme.colors.textSecondary,
+                            container: theme.colors.headerBackground,
+                            containerActive: theme.colors.primary,
+                            iconActive: theme.colors.text,
+                        },
+                        search: {
+                            placeholder: theme.colors.textMuted,
+                            text: theme.colors.textSecondary,
+                            icon: theme.colors.text,
+                            background: theme.colors.headerBackground
+                        }
+                    } }
+                />
+            }
         </>
     )
 }
