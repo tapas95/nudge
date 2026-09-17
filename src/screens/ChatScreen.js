@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
 import { db } from "@/services/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
-import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert, TextInput } from "react-native";
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert, TextInput, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
 import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
@@ -12,6 +12,7 @@ import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
 import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const ChatScreen = ( { route, navigation } ) => {
     const { chatId, recipient } = route.params || null;
@@ -158,7 +159,6 @@ const ChatScreen = ( { route, navigation } ) => {
         } )
     }, [ selectedMessages, navigation ] );
     const handleOnEmojiSelected = ( selectedEmojis ) => {
-        console.log( JSON.stringify( selectedEmojis, null, 4 ) );
         setMessage( prev => prev + selectedEmojis.emoji );
     }
     return(
@@ -430,9 +430,16 @@ const ChatScreen = ( { route, navigation } ) => {
                                             hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
                                             activeOpacity={ 0.75 }
                                             style={ styles.emojiButton }
-                                            onPress={ () => setIsEmojiPickerOpen( prev => !prev ) }
+                                            onPress={ () => {
+                                                !isEmojiPickerOpen ? Keyboard.dismiss() : null;
+                                                setIsEmojiPickerOpen( prev => !prev )
+                                            } }
                                         >
-                                            <Entypo name="emoji-happy" size={ 20 } color={ theme.colors.textSecondary } />
+                                            { isEmojiPickerOpen ? (
+                                                <FontAwesome name="keyboard-o" size={ 20 } color={ theme.colors.textSecondary } />
+                                            ) : (
+                                                <Entypo name="emoji-happy" size={ 20 } color={ theme.colors.textSecondary } />
+                                            ) }
                                         </TouchableOpacity>
                                         <TextInput
                                             placeholder="Type a message..."
@@ -441,6 +448,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                             resizeMode={ true }
                                             value={ message }
                                             onChangeText={ setMessage }
+                                            onFocus={ () => setIsEmojiPickerOpen( false ) }
                                             style={ [ 
                                                 styles.messageInput,
                                                 {
