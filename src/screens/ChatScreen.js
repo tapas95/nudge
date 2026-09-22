@@ -3,15 +3,16 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
 import { db } from "@/services/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
-import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert, TextInput } from "react-native";
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert, TextInput, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
 import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
-import Input from "@/components/ui/Input";
+import { EmojiKeyboard } from 'rn-emoji-keyboard';
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
 import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const ChatScreen = ( { route, navigation } ) => {
     const { chatId, recipient } = route.params || null;
@@ -23,6 +24,7 @@ const ChatScreen = ( { route, navigation } ) => {
     const [ selectedMessages, setSelectedMessages ] = useState( null );
     const [ replyMessage, setReplyMessage ] = useState( null );
     const player = useAudioPlayer( require( '../../assets/message-sent-sound.wav' ) );
+    const [ isEmojiPickerOpen, setIsEmojiPickerOpen ] = useState( false );
     useEffect( () => {
         setAudioModeAsync( {
             playsInSilentMode: true
@@ -156,305 +158,347 @@ const ChatScreen = ( { route, navigation } ) => {
             gestureEnabled: !selectedMessages
         } )
     }, [ selectedMessages, navigation ] );
+    const handleOnEmojiSelected = ( selectedEmojis ) => {
+        setMessage( prev => prev + selectedEmojis.emoji );
+    }
     return(
-        <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
-            <View style={ [
-                styles.chatHeader,
-                {
-                    paddingTop: insets.top + 12,
-                    backgroundColor: theme.colors.headerBackground
-                }
-            ] }>
-                <TouchableOpacity
-                    onPress={ () => selectedMessages ? setSelectedMessages( null ) : navigation.goBack() }
-                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                    activeOpacity={ 0.75 }
-                >
-                    <Ionicons name="arrow-back" size={ 24 } color={ theme.colors.headerText } />
-                </TouchableOpacity>
-                <View style={ styles.userContainer }>
-                    <View style={ [
-                        styles.avatarContainer,
-                        {
-                            backgroundColor: theme.colors.accent
-                        }
-                    ] }>
-                        { recipient?.avatarUrl ? (
-                            <Image source={ { uri: recipient?.avatarUrl } } width={ 32 } height={ 32 } resizeMode="cover" />
-                        ) : (
+        <>
+            <View style={ { flex: 1, backgroundColor: theme.colors.background } }>
+                <View style={ [
+                    styles.chatHeader,
+                    {
+                        paddingTop: insets.top + 12,
+                        backgroundColor: theme.colors.headerBackground
+                    }
+                ] }>
+                    <TouchableOpacity
+                        onPress={ () => selectedMessages ? setSelectedMessages( null ) : navigation.goBack() }
+                        hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                        activeOpacity={ 0.75 }
+                    >
+                        <Ionicons name="arrow-back" size={ 24 } color={ theme.colors.headerText } />
+                    </TouchableOpacity>
+                    <View style={ styles.userContainer }>
+                        <View style={ [
+                            styles.avatarContainer,
+                            {
+                                backgroundColor: theme.colors.accent
+                            }
+                        ] }>
+                            { recipient?.avatarUrl ? (
+                                <Image source={ { uri: recipient?.avatarUrl } } width={ 32 } height={ 32 } resizeMode="cover" />
+                            ) : (
+                                <Text style={ [
+                                    styles.avatarText,
+                                    {
+                                        fontFamily: theme.typography.fontFamily.bold,
+                                        color: theme.colors.text
+                                    }
+                                ] }>
+                                    { recipient?.name ? recipient?.name[ 0 ].toUpperCase() : '?' }
+                                </Text>
+                            ) }
+                        </View>
+                        <View>
                             <Text style={ [
-                                styles.avatarText,
+                                styles.userName,
                                 {
                                     fontFamily: theme.typography.fontFamily.bold,
                                     color: theme.colors.text
                                 }
                             ] }>
-                                { recipient?.name ? recipient?.name[ 0 ].toUpperCase() : '?' }
+                                { recipient?.name ? recipient?.name : 'Unknown User' }
                             </Text>
-                        ) }
+                            <Text style={ [
+                                styles.userNumber,
+                                {
+                                    fontFamily: theme.typography.fontFamily.medium,
+                                    color: theme.colors.textSecondary
+                                }
+                            ] }>
+                                { recipient?.phoneNumber }
+                            </Text>
+                        </View>
                     </View>
-                    <View>
-                        <Text style={ [
-                            styles.userName,
-                            {
-                                fontFamily: theme.typography.fontFamily.bold,
-                                color: theme.colors.text
-                            }
-                        ] }>
-                            { recipient?.name ? recipient?.name : 'Unknown User' }
-                        </Text>
-                        <Text style={ [
-                            styles.userNumber,
-                            {
-                                fontFamily: theme.typography.fontFamily.medium,
-                                color: theme.colors.textSecondary
-                            }
-                        ] }>
-                            { recipient?.phoneNumber }
-                        </Text>
-                    </View>
-                </View>
-                <View style={ styles.actionContainer }>
-                    { selectedMessages ? (
-                        <>
-                            <TouchableOpacity
-                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                                activeOpacity={ 0.75 }
-                                onPress={ handleCopyMessageText }
-                            >
-                                <Ionicons name="copy-outline" size={ 24 } color={ theme.colors.textSecondary } />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                                activeOpacity={ 0.75 }
-                                onPress={ () => {
-                                    setReplyMessage( selectedMessages );
-                                    setSelectedMessages( null );
-                                } }
-                            >
-                                <Octicons name="reply" size={ 24 } color={ theme.colors.textSecondary } />
-                            </TouchableOpacity>
-                            { selectedMessages?.senderId === currentUser?.uid && (
+                    <View style={ styles.actionContainer }>
+                        { selectedMessages ? (
+                            <>
                                 <TouchableOpacity
                                     hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
                                     activeOpacity={ 0.75 }
-                                    onPress={ handleDeleteMessageText }
+                                    onPress={ handleCopyMessageText }
                                 >
-                                    <Ionicons name="trash-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                                    <Ionicons name="copy-outline" size={ 24 } color={ theme.colors.textSecondary } />
                                 </TouchableOpacity>
-                            ) }
-                        </>
-                    ) : (
-                        <>
-                            <TouchableOpacity
-                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                                activeOpacity={ 0.75 }
-                            >
-                                <Ionicons name="videocam-outline" size={ 24 } color={ theme.colors.textSecondary } />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
-                                activeOpacity={ 0.75 }
-                            >
-                                <Ionicons name="call-outline" size={ 24 } color={ theme.colors.textSecondary } />
-                            </TouchableOpacity>
-                        </>
-                    ) }
+                                <TouchableOpacity
+                                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                    activeOpacity={ 0.75 }
+                                    onPress={ () => {
+                                        setReplyMessage( selectedMessages );
+                                        setSelectedMessages( null );
+                                    } }
+                                >
+                                    <Octicons name="reply" size={ 24 } color={ theme.colors.textSecondary } />
+                                </TouchableOpacity>
+                                { selectedMessages?.senderId === currentUser?.uid && (
+                                    <TouchableOpacity
+                                        hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                        activeOpacity={ 0.75 }
+                                        onPress={ handleDeleteMessageText }
+                                    >
+                                        <Ionicons name="trash-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                                    </TouchableOpacity>
+                                ) }
+                            </>
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                    activeOpacity={ 0.75 }
+                                >
+                                    <Ionicons name="videocam-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    hitSlop={ { top: 10, right: 10, bottom: 10, left: 10 } }
+                                    activeOpacity={ 0.75 }
+                                >
+                                    <Ionicons name="call-outline" size={ 24 } color={ theme.colors.textSecondary } />
+                                </TouchableOpacity>
+                            </>
+                        ) }
+                    </View>
                 </View>
-            </View>
-            <View style={ { flex: 1, backgroundColor: theme.colors.chatBackground } }>
-                <KeyboardAvoidingView
-                    style={ { flex: 1 } }
-                    behavior={ Platform.OS === "ios" ? "padding" : undefined }
-                >
-                    <View style={ styles.chatWrapper }>
-                        <View style={ styles.chatContainer }>
-                            { messages.length === 0 ? (
-                                <View style={ styles.emptyContainer }>
-                                    <Text style={ [ styles.emptyText, { color: theme.colors.textSecondary } ] }>
-                                        Say hello to { recipient?.name || 'them' }!
-                                    </Text>
-                                </View>
-                            ) : (
-                                <FlatList
-                                    data={ messages }
-                                    keyExtractor={ item => item.id }
-                                    inverted
-                                    contentContainerStyle={ styles.messagesList }
-                                    showsVerticalScrollIndicator={ false }
-                                    renderItem={ ( { item } ) => {
-                                        const isMe = item.senderId === currentUser?.uid;
-                                        const isSelected = selectedMessages?.id === item.id;
-                                        const formattedTime = formatMessageTime( item.createdAt );
-                                        return(
-                                            <TouchableOpacity
-                                                onLongPress={ () => handleMessageLongPress( item, isMe ) }
-                                                onPress={ () => {
-                                                    if( selectedMessages ){
-                                                        setSelectedMessages( isSelected ? null : item );
-                                                    }
-                                                } }
-                                                delayLongPress={ 250 }
-                                                activeOpacity={ 0.75 }
+                <View style={ { flex: 1, backgroundColor: theme.colors.chatBackground } }>
+                    <KeyboardAvoidingView
+                        style={ { flex: 1 } }
+                        behavior={ Platform.OS === "ios" ? "padding" : undefined }
+                    >
+                        <View style={ styles.chatWrapper }>
+                            <View style={ styles.chatContainer }>
+                                { messages.length === 0 ? (
+                                    <View style={ styles.emptyContainer }>
+                                        <Text style={ [ styles.emptyText, { color: theme.colors.textSecondary } ] }>
+                                            Say hello to { recipient?.name || 'them' }!
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <FlatList
+                                        data={ messages }
+                                        keyExtractor={ item => item.id }
+                                        inverted
+                                        contentContainerStyle={ styles.messagesList }
+                                        showsVerticalScrollIndicator={ false }
+                                        renderItem={ ( { item } ) => {
+                                            const isMe = item.senderId === currentUser?.uid;
+                                            const isSelected = selectedMessages?.id === item.id;
+                                            const formattedTime = formatMessageTime( item.createdAt );
+                                            return(
+                                                <TouchableOpacity
+                                                    onLongPress={ () => handleMessageLongPress( item, isMe ) }
+                                                    onPress={ () => {
+                                                        if( selectedMessages ){
+                                                            setSelectedMessages( isSelected ? null : item );
+                                                        }
+                                                    } }
+                                                    delayLongPress={ 250 }
+                                                    activeOpacity={ 0.75 }
+                                                    style={ [
+                                                        styles.messageContainer,
+                                                        {
+                                                            alignItems: isMe ? 'flex-end' : 'flex-start',
+                                                            padding: isSelected ? 6 : null,
+                                                            backgroundColor: isSelected ? theme.colors.primaryMuted : null,
+                                                            borderRadius: isSelected ? 6 : null
+                                                        }
+                                                    ] }
+                                                >
+                                                    <View style={ [
+                                                        styles.messageBubble,
+                                                        {
+                                                            backgroundColor: isMe ? theme.colors.bubbleOutgoing : theme.colors.bubbleIncoming,
+                                                            borderBottomRightRadius: isMe ? 0 : 12,
+                                                            borderBottomLeftRadius: isMe ? 12 : 0
+                                                        }
+                                                    ] }>
+                                                        { item.replyTo && (
+                                                            <View
+                                                                style={ [
+                                                                    styles.replyBubble,
+                                                                    {
+                                                                        backgroundColor: isMe ? 'rgba( 255, 255, 255, 0.1 )' : theme.colors.primaryMuted,
+                                                                        borderRadius: theme.radii.sm,
+                                                                        borderColor: isMe ? theme.colors.text : theme.colors.primary
+                                                                    }
+                                                                ] }
+                                                            >
+                                                                <Text
+                                                                    style={ [
+                                                                        {
+                                                                            fontFamily: theme.typography.fontFamily.medium,
+                                                                            color: isMe ? theme.colors.text : theme.colors.primary
+                                                                        }
+                                                                    ] }
+                                                                >
+                                                                    { item.replyTo.senderId === currentUser.uid ? 'You' : recipient?.name || 'Unknown' }
+                                                                </Text>
+                                                                <Text
+                                                                    style={ [
+                                                                        styles.replyBubbleText,
+                                                                        {
+                                                                            fontFamily: theme.typography.fontFamily.regular,
+                                                                            color: theme.colors.textSecondary
+                                                                        }
+                                                                    ] }
+                                                                >
+                                                                    { item.replyTo.text }
+                                                                </Text>
+                                                            </View>
+                                                        ) }
+                                                        <Text style={ [
+                                                            styles.messageText,
+                                                            {
+                                                                fontFamily: theme.typography.fontFamily.medium,
+                                                                color: isMe ? theme.colors.bubbleOutgoingText : theme.colors.bubbleIncomingText
+                                                            }
+                                                        ] }>
+                                                            { item.text }
+                                                        </Text>
+                                                    </View>
+                                                    { formattedTime ? (
+                                                        <Text style={ [
+                                                            styles.timeText,
+                                                            {
+                                                                fontFamily: theme.typography.fontFamily.regular,
+                                                                color: isMe ? theme.colors.bubbleOutgoingTime || theme.colors.textMuted : theme.colors.bubbleIncomingTime || theme.colors.textMuted
+                                                            }
+                                                        ] }>
+                                                            { formattedTime }
+                                                        </Text>
+                                                    ) : null }
+                                                </TouchableOpacity>
+                                            )
+                                        } }
+                                    />
+                                ) }
+                            </View>
+                            <View style={ styles.chatActionContainer }>
+                                <View
+                                    style={ [
+                                        styles.messageInputContainer,
+                                        {
+                                            backgroundColor: theme.colors.headerBackground,
+                                            borderColor: theme.colors.border,
+                                            borderRadius: theme.radii.xl
+                                        }
+                                    ] }
+                                >
+                                    { replyMessage && (
+                                        <View
+                                            style={ [
+                                                styles.replyMessageContainer,
+                                                {
+                                                    backgroundColor: theme.colors.primaryMuted,
+                                                    borderColor: theme.colors.primary,
+                                                    borderRadius: theme.radii.lg
+                                                }
+                                            ] }
+                                        >
+                                            <Text
                                                 style={ [
-                                                    styles.messageContainer,
+                                                    styles.replyMessageText,
                                                     {
-                                                        alignItems: isMe ? 'flex-end' : 'flex-start',
-                                                        padding: isSelected ? 6 : null,
-                                                        backgroundColor: isSelected ? theme.colors.primaryMuted : null,
-                                                        borderRadius: isSelected ? 6 : null
+                                                        fontFamily: theme.typography.fontFamily.regular,
+                                                        color: theme.colors.text
                                                     }
                                                 ] }
                                             >
-                                                <View style={ [
-                                                    styles.messageBubble,
-                                                    {
-                                                        backgroundColor: isMe ? theme.colors.bubbleOutgoing : theme.colors.bubbleIncoming,
-                                                        borderBottomRightRadius: isMe ? 0 : 12,
-                                                        borderBottomLeftRadius: isMe ? 12 : 0
-                                                    }
-                                                ] }>
-                                                    { item.replyTo && (
-                                                        <View
-                                                            style={ [
-                                                                styles.replyBubble,
-                                                                {
-                                                                    backgroundColor: isMe ? 'rgba( 255, 255, 255, 0.1 )' : theme.colors.primaryMuted,
-                                                                    borderRadius: theme.radii.sm,
-                                                                    borderColor: isMe ? theme.colors.text : theme.colors.primary
-                                                                }
-                                                            ] }
-                                                        >
-                                                            <Text
-                                                                style={ [
-                                                                    {
-                                                                        fontFamily: theme.typography.fontFamily.medium,
-                                                                        color: isMe ? theme.colors.text : theme.colors.primary
-                                                                    }
-                                                                ] }
-                                                            >
-                                                                { item.replyTo.senderId === currentUser.uid ? 'You' : recipient?.name || 'Unknown' }
-                                                            </Text>
-                                                            <Text
-                                                                style={ [
-                                                                    styles.replyBubbleText,
-                                                                    {
-                                                                        fontFamily: theme.typography.fontFamily.regular,
-                                                                        color: theme.colors.textSecondary
-                                                                    }
-                                                                ] }
-                                                            >
-                                                                { item.replyTo.text }
-                                                            </Text>
-                                                        </View>
-                                                    ) }
-                                                    <Text style={ [
-                                                        styles.messageText,
-                                                        {
-                                                            fontFamily: theme.typography.fontFamily.medium,
-                                                            color: isMe ? theme.colors.bubbleOutgoingText : theme.colors.bubbleIncomingText
-                                                        }
-                                                    ] }>
-                                                        { item.text }
-                                                    </Text>
-                                                </View>
-                                                { formattedTime ? (
-                                                    <Text style={ [
-                                                        styles.timeText,
-                                                        {
-                                                            fontFamily: theme.typography.fontFamily.regular,
-                                                            color: isMe ? theme.colors.bubbleOutgoingTime || theme.colors.textMuted : theme.colors.bubbleIncomingTime || theme.colors.textMuted
-                                                        }
-                                                    ] }>
-                                                        { formattedTime }
-                                                    </Text>
-                                                ) : null }
+                                                { replyMessage.text }
+                                            </Text>
+                                            <TouchableOpacity
+                                                hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
+                                                activeOpacity={ 0.75 }
+                                                onPress={ () => {
+                                                    setReplyMessage( null );
+                                                } }
+                                            >
+                                                <Ionicons name="close-outline" size={ 18 } color={ theme.colors.textSecondary } />
                                             </TouchableOpacity>
-                                        )
-                                    } }
-                                />
-                            ) }
-                        </View>
-                        <View style={ styles.chatActionContainer }>
-                            <View
-                                style={ [
-                                    styles.messageInputContainer,
-                                    {
-                                        backgroundColor: theme.colors.headerBackground,
-                                        borderColor: theme.colors.border,
-                                        borderRadius: theme.radii.xl
-                                    }
-                                ] }
-                            >
-                                { replyMessage && (
-                                    <View
-                                        style={ [
-                                            styles.replyMessageContainer,
-                                            {
-                                                backgroundColor: theme.colors.primaryMuted,
-                                                borderColor: theme.colors.primary,
-                                                borderRadius: theme.radii.lg
-                                            }
-                                        ] }
-                                    >
-                                        <Text
-                                            style={ [
-                                                styles.replyMessageText,
+                                        </View>
+                                    ) }
+                                    <View style={ styles.messageInputInnerContainer }>
+                                        <TouchableOpacity
+                                            hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
+                                            activeOpacity={ 0.75 }
+                                            style={ styles.emojiButton }
+                                            onPress={ () => {
+                                                !isEmojiPickerOpen ? Keyboard.dismiss() : null;
+                                                setIsEmojiPickerOpen( prev => !prev )
+                                            } }
+                                        >
+                                            { isEmojiPickerOpen ? (
+                                                <FontAwesome name="keyboard-o" size={ 20 } color={ theme.colors.textSecondary } />
+                                            ) : (
+                                                <Entypo name="emoji-happy" size={ 20 } color={ theme.colors.textSecondary } />
+                                            ) }
+                                        </TouchableOpacity>
+                                        <TextInput
+                                            placeholder="Type a message..."
+                                            placeholderTextColor={ theme.colors.textMuted }
+                                            multiline
+                                            resizeMode={ true }
+                                            value={ message }
+                                            onChangeText={ setMessage }
+                                            onFocus={ () => setIsEmojiPickerOpen( false ) }
+                                            style={ [ 
+                                                styles.messageInput,
                                                 {
                                                     fontFamily: theme.typography.fontFamily.regular,
                                                     color: theme.colors.text
                                                 }
                                             ] }
-                                        >
-                                            { replyMessage.text }
-                                        </Text>
-                                        <TouchableOpacity
-                                            hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
-                                            activeOpacity={ 0.75 }
-                                            onPress={ () => {
-                                                setReplyMessage( null );
-                                            } }
-                                        >
-                                            <Ionicons name="close-outline" size={ 18 } color={ theme.colors.textSecondary } />
-                                        </TouchableOpacity>
+                                        />
                                     </View>
-                                ) }
-                                <View style={ styles.messageInputInnerContainer }>
-                                    <TouchableOpacity
-                                        hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
-                                        activeOpacity={ 0.75 }
-                                        style={ styles.emojiButton }
-                                    >
-                                        <Entypo name="emoji-happy" size={ 20 } color={ theme.colors.textSecondary } />
-                                    </TouchableOpacity>
-                                    <TextInput
-                                        placeholder="Type a message..."
-                                        placeholderTextColor={ theme.colors.textMuted }
-                                        multiline
-                                        resizeMode={ true }
-                                        value={ message }
-                                        onChangeText={ setMessage }
-                                        style={ [ 
-                                            styles.messageInput,
-                                            {
-                                                fontFamily: theme.typography.fontFamily.regular,
-                                                color: theme.colors.text
-                                            }
-                                        ] }
-                                    />
                                 </View>
+                                <Button
+                                    style={ styles.sendBtn }
+                                    onPress={ handleSendMessage }
+                                >
+                                    <Ionicons name="send-outline" size={ 24 } color={ theme.colors.text } />
+                                </Button>
                             </View>
-                            <Button
-                                style={ styles.sendBtn }
-                                onPress={ handleSendMessage }
-                            >
-                                <Ionicons name="send-outline" size={ 24 } color={ theme.colors.text } />
-                            </Button>
                         </View>
-                    </View>
-                </KeyboardAvoidingView>
+                    </KeyboardAvoidingView>
+                </View>
             </View>
-        </View>
+            { isEmojiPickerOpen &&
+                <EmojiKeyboard
+                    onEmojiSelected={ handleOnEmojiSelected }
+                    enableSearchBar
+                    allowMultipleSelections
+                    enableRecentlyUsed
+                    categoryPosition="top"
+                    emojiSize={ 30 }
+                    hideSearchBarClearIcon={ true }
+                    theme={ {
+                        container: theme.colors.background,
+                        header: theme.colors.text,
+                        knob: theme.colors.primaryMuted,
+                        category: {
+                            icon: theme.colors.textSecondary,
+                            container: theme.colors.headerBackground,
+                            containerActive: theme.colors.primary,
+                            iconActive: theme.colors.text,
+                        },
+                        search: {
+                            placeholder: theme.colors.textMuted,
+                            text: theme.colors.textSecondary,
+                            icon: theme.colors.text,
+                            background: theme.colors.headerBackground
+                        }
+                    } }
+                />
+            }
+        </>
     )
 }
 export default ChatScreen;
