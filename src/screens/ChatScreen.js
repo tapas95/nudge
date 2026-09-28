@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/theme/ThemeContext";
 import { db } from "@/services/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
 import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList, TouchableOpacity, BackHandler, Alert, TextInput, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
 import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
-import { EmojiKeyboard } from 'rn-emoji-keyboard';
+import { EmojiKeyboard, tr } from 'rn-emoji-keyboard';
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
@@ -25,6 +25,8 @@ const ChatScreen = ( { route, navigation } ) => {
     const [ replyMessage, setReplyMessage ] = useState( null );
     const player = useAudioPlayer( require( '../../assets/message-sent-sound.wav' ) );
     const [ isEmojiPickerOpen, setIsEmojiPickerOpen ] = useState( false );
+    const [ isReactionOpen, setIsReactionOpen ] = useState( null );
+    const inputRef = useRef( null );
     useEffect( () => {
         setAudioModeAsync( {
             playsInSilentMode: true
@@ -103,6 +105,7 @@ const ChatScreen = ( { route, navigation } ) => {
     };
     const handleMessageLongPress = ( item, isMe ) => {
         setSelectedMessages( item );
+        setIsReactionOpen( item.id );
     }
     const handleCopyMessageText = async () => {
         if( selectedMessages?.text ){
@@ -148,11 +151,15 @@ const ChatScreen = ( { route, navigation } ) => {
                 setReplyMessage( false );
                 return true;
             }
+            if( isReactionOpen ){
+                setIsReactionOpen( null );
+                return true;
+            }
             return false;
         }
         const backHandler = BackHandler.addEventListener( 'hardwareBackPress', onBackPress );
         return () => backHandler.remove();
-    }, [ selectedMessages ] );
+    }, [ selectedMessages, replyMessage, isReactionOpen ] );
     useEffect( () => {
         navigation.setOptions( {
             gestureEnabled: !selectedMessages
@@ -160,6 +167,35 @@ const ChatScreen = ( { route, navigation } ) => {
     }, [ selectedMessages, navigation ] );
     const handleOnEmojiSelected = ( selectedEmojis ) => {
         setMessage( prev => prev + selectedEmojis.emoji );
+    }
+    const handleToggleKeyboard = () => {
+        if( isEmojiPickerOpen ){
+            inputRef.current?.focus();
+            setIsEmojiPickerOpen( false );
+        } else{
+            Keyboard.dismiss();
+            setIsEmojiPickerOpen( true );
+        }
+    }
+    const handleSelectReaction = async ( item, emoji ) => {
+        if ( !chatId || !item ) return;
+        setIsReactionOpen( null );
+        setSelectedMessages( null );
+        const messageRef = doc( db, "chats", chatId, "messages", item.id );
+        const currentReaction = item.reactions?.[ currentUser.uid ];
+        try {
+            if ( currentReaction === emoji ) {
+                await updateDoc( messageRef, {
+                    [ `reactions.${ currentUser.uid }` ]: deleteField()
+                } );
+            } else {
+                await updateDoc( messageRef, {
+                    [ `reactions.${ currentUser.uid }` ]: emoji
+                } );
+            }
+        } catch ( error ) {
+            console.error( "Error saving reaction:", error );
+        }
     }
     return(
         <>
@@ -292,6 +328,9 @@ const ChatScreen = ( { route, navigation } ) => {
                                             const isMe = item.senderId === currentUser?.uid;
                                             const isSelected = selectedMessages?.id === item.id;
                                             const formattedTime = formatMessageTime( item.createdAt );
+                                            const reactions = item.reactions || {};
+                                            const reactionEntries = Object.entries( reactions );
+                                            const uniqueEmojis = Array.from( new Set( Object.values( reactions ) ) );
                                             return(
                                                 <TouchableOpacity
                                                     onLongPress={ () => handleMessageLongPress( item, isMe ) }
@@ -364,6 +403,25 @@ const ChatScreen = ( { route, navigation } ) => {
                                                             { item.text }
                                                         </Text>
                                                     </View>
+                                                    { reactionEntries.length > 0 && (
+                                                        <View style={ [
+                                                            styles.reactionBadge,
+                                                            {
+                                                                backgroundColor: theme.colors.headerBackground,
+                                                                borderColor: theme.colors.border,
+                                                                alignSelf: isMe ? 'flex-end' : 'flex-start',
+                                                            }
+                                                        ] }>
+                                                            <Text style={ styles.reactionBadgeEmojis }>
+                                                                { uniqueEmojis.join( '' ) }
+                                                            </Text>
+                                                            { reactionEntries.length > 1 && (
+                                                                <Text style={ [ styles.reactionCountText, { color: theme.colors.textSecondary } ] }>
+                                                                    { reactionEntries.length }
+                                                                </Text>
+                                                            ) }
+                                                        </View>
+                                                    ) }
                                                     { formattedTime ? (
                                                         <Text style={ [
                                                             styles.timeText,
@@ -375,6 +433,28 @@ const ChatScreen = ( { route, navigation } ) => {
                                                             { formattedTime }
                                                         </Text>
                                                     ) : null }
+                                                    { isReactionOpen === item.id &&
+                                                        <View style={ [
+                                                            styles.reactionEmojiContainer,
+                                                            {
+                                                                backgroundColor: theme.colors.headerBackground,
+                                                                borderRadius: theme.radii.sm,
+                                                                right: isMe ? 0 : 'auto',
+                                                                left: isMe ? 'auto' : 0
+                                                            }
+                                                        ] }>
+                                                            { [ '👍', '❤️', '😂', '😮', '😢', '🙏' ].map( emoji => (
+                                                                <TouchableOpacity
+                                                                    key={ emoji }
+                                                                    hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
+                                                                    activeOpacity={ 0.75 }
+                                                                    onPress={ () => handleSelectReaction( item, emoji ) }
+                                                                >
+                                                                    <Text>{ emoji }</Text>
+                                                                </TouchableOpacity>
+                                                            ) ) }
+                                                        </View>
+                                                    }
                                                 </TouchableOpacity>
                                             )
                                         } }
@@ -382,6 +462,12 @@ const ChatScreen = ( { route, navigation } ) => {
                                 ) }
                             </View>
                             <View style={ styles.chatActionContainer }>
+                                <TouchableOpacity
+                                    hitSlop={ { top: 8, right: 8, bottom: 8, left: 8 } }
+                                    activeOpacity={ 0.75 }
+                                >
+                                    <Ionicons name="add" size={ 24 } color={ theme.colors.textSecondary } />
+                                </TouchableOpacity>
                                 <View
                                     style={ [
                                         styles.messageInputContainer,
@@ -430,10 +516,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                             hitSlop={ { top: 5, right: 5, bottom: 5, left: 5 } }
                                             activeOpacity={ 0.75 }
                                             style={ styles.emojiButton }
-                                            onPress={ () => {
-                                                !isEmojiPickerOpen ? Keyboard.dismiss() : null;
-                                                setIsEmojiPickerOpen( prev => !prev )
-                                            } }
+                                            onPress={ handleToggleKeyboard }
                                         >
                                             { isEmojiPickerOpen ? (
                                                 <FontAwesome name="keyboard-o" size={ 20 } color={ theme.colors.textSecondary } />
@@ -449,6 +532,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                             value={ message }
                                             onChangeText={ setMessage }
                                             onFocus={ () => setIsEmojiPickerOpen( false ) }
+                                            ref={ inputRef }
                                             style={ [ 
                                                 styles.messageInput,
                                                 {
@@ -552,7 +636,8 @@ const styles = StyleSheet.create( {
         paddingVertical: 12
     },
     messageContainer:{
-        gap: 4
+        gap: 4,
+        position: 'relative'
     },
     messageBubble:{
         maxWidth: '80%',
@@ -563,6 +648,15 @@ const styles = StyleSheet.create( {
     messageText:{
         fontSize: 16,
         lineHeight: 22
+    },
+    reactionEmojiContainer:{
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        gap: 8,
+        position: 'absolute',
+        top: '100%',
+        zIndex: 99
     },
     timeText:{
         fontSize: 12,
