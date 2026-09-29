@@ -155,11 +155,15 @@ const ChatScreen = ( { route, navigation } ) => {
                 setIsReactionOpen( null );
                 return true;
             }
+            if( isEmojiPickerOpen ){
+                setIsEmojiPickerOpen( false );
+                return true;
+            }
             return false;
         }
         const backHandler = BackHandler.addEventListener( 'hardwareBackPress', onBackPress );
         return () => backHandler.remove();
-    }, [ selectedMessages, replyMessage, isReactionOpen ] );
+    }, [ selectedMessages, replyMessage, isReactionOpen, isEmojiPickerOpen ] );
     useEffect( () => {
         navigation.setOptions( {
             gestureEnabled: !selectedMessages
@@ -460,6 +464,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                 <TouchableOpacity
                                     hitSlop={ { top: 8, right: 8, bottom: 8, left: 8 } }
                                     activeOpacity={ 0.75 }
+                                    style={ styles.actionAddMedia }
                                 >
                                     <Ionicons name="add" size={ 24 } color={ theme.colors.textSecondary } />
                                 </TouchableOpacity>
@@ -619,6 +624,9 @@ const styles = StyleSheet.create( {
         gap: 16,
         marginLeft: 'auto'
     },
+    actionAddMedia:{
+        marginBottom: 12
+    },
     chatWrapper:{
         flex: 1,
         padding: 16
@@ -705,7 +713,8 @@ const styles = StyleSheet.create( {
         fontStyle: 'italic'
     },
     emojiButton:{
-        alignSelf: 'flex-end'
+        alignSelf: 'flex-end',
+        marginBottom: 6
     },
     messageInput:{
         flex: 1,
