@@ -7,7 +7,8 @@ import { View, Text, Image, StyleSheet, KeyboardAvoidingView, Platform, FlatList
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from 'expo-clipboard';
 import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
-import { EmojiKeyboard, tr } from 'rn-emoji-keyboard';
+import { EmojiKeyboard } from 'rn-emoji-keyboard';
+import * as ImagePicker from 'expo-image-picker';
 import Button from "@/components/ui/Button";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Octicons from '@expo/vector-icons/Octicons';
@@ -26,6 +27,7 @@ const ChatScreen = ( { route, navigation } ) => {
     const player = useAudioPlayer( require( '../../assets/message-sent-sound.wav' ) );
     const [ isEmojiPickerOpen, setIsEmojiPickerOpen ] = useState( false );
     const [ isReactionOpen, setIsReactionOpen ] = useState( null );
+    const [ isUploadingMedia, setIsUploadingMedia ] = useState( false );
     const inputRef = useRef( null );
     useEffect( () => {
         setAudioModeAsync( {
@@ -196,6 +198,23 @@ const ChatScreen = ( { route, navigation } ) => {
         } catch ( error ) {
             console.error( "Error saving reaction:", error );
         }
+    }
+    const handleUploadMedia = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if ( !permissionResult.granted ) {
+            Alert.alert( 'Permission required', 'Permission to access the media library is required.' );
+            return;
+        }
+        let result = await ImagePicker.launchImageLibraryAsync( {
+            mediaTypes: [ 'images', 'videos' ],
+            allowsEditing: true,
+            quality: 0.75,
+        } );
+        if ( !result.canceled ){
+            const localUri = result.assets[ 0 ].uri;
+            setIsUploadingMedia( true );
+        }
+        console.log( JSON.stringify( result, null, 4 ) );
     }
     return(
         <>
@@ -465,6 +484,7 @@ const ChatScreen = ( { route, navigation } ) => {
                                     hitSlop={ { top: 8, right: 8, bottom: 8, left: 8 } }
                                     activeOpacity={ 0.75 }
                                     style={ styles.actionAddMedia }
+                                    onPress={ handleUploadMedia }
                                 >
                                     <Ionicons name="add" size={ 24 } color={ theme.colors.textSecondary } />
                                 </TouchableOpacity>
