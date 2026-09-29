@@ -185,13 +185,9 @@ const ChatScreen = ( { route, navigation } ) => {
         const currentReaction = item.reactions?.[ currentUser.uid ];
         try {
             if ( currentReaction === emoji ) {
-                await updateDoc( messageRef, {
-                    [ `reactions.${ currentUser.uid }` ]: deleteField()
-                } );
+                await updateDoc( messageRef, { [ `reactions.${ currentUser.uid }` ]: deleteField() } );
             } else {
-                await updateDoc( messageRef, {
-                    [ `reactions.${ currentUser.uid }` ]: emoji
-                } );
+                await updateDoc( messageRef, { [ `reactions.${ currentUser.uid }` ]: emoji } );
             }
         } catch ( error ) {
             console.error( "Error saving reaction:", error );
@@ -402,26 +398,25 @@ const ChatScreen = ( { route, navigation } ) => {
                                                         ] }>
                                                             { item.text }
                                                         </Text>
-                                                    </View>
-                                                    { reactionEntries.length > 0 && (
-                                                        <View style={ [
-                                                            styles.reactionBadge,
-                                                            {
-                                                                backgroundColor: theme.colors.headerBackground,
-                                                                borderColor: theme.colors.border,
-                                                                alignSelf: isMe ? 'flex-end' : 'flex-start',
-                                                            }
-                                                        ] }>
-                                                            <Text style={ styles.reactionBadgeEmojis }>
-                                                                { uniqueEmojis.join( '' ) }
-                                                            </Text>
-                                                            { reactionEntries.length > 1 && (
-                                                                <Text style={ [ styles.reactionCountText, { color: theme.colors.textSecondary } ] }>
-                                                                    { reactionEntries.length }
+                                                        { reactionEntries.length > 0 && (
+                                                            <View style={ [
+                                                                styles.reactionBadge,
+                                                                {
+                                                                    left: isMe ? 8 : 'auto',
+                                                                    right: isMe ? 'auto' : 8
+                                                                }
+                                                            ] }>
+                                                                <Text style={ styles.reactionEmoji }>
+                                                                    { uniqueEmojis.join( '' ) }
                                                                 </Text>
-                                                            ) }
-                                                        </View>
-                                                    ) }
+                                                                { reactionEntries.length > 1 && (
+                                                                    <Text style={ [ styles.reactionCountText, { color: theme.colors.textSecondary } ] }>
+                                                                        { reactionEntries.length }
+                                                                    </Text>
+                                                                ) }
+                                                            </View>
+                                                        ) }
+                                                    </View>
                                                     { formattedTime ? (
                                                         <Text style={ [
                                                             styles.timeText,
@@ -643,7 +638,8 @@ const styles = StyleSheet.create( {
         maxWidth: '80%',
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: 12
+        borderRadius: 12,
+        position: 'relative'
     },
     messageText:{
         fontSize: 16,
@@ -657,6 +653,14 @@ const styles = StyleSheet.create( {
         position: 'absolute',
         top: '100%',
         zIndex: 99
+    },
+    reactionBadge:{
+        position: 'absolute',
+        bottom: -9
+    },
+    reactionEmoji:{
+        fontSize: 18,
+        lineHeight: 18
     },
     timeText:{
         fontSize: 12,
