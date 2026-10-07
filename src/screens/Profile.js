@@ -9,7 +9,6 @@ const Profile = ( { navigation } ) => {
     const { user, logout } = useAuth();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
-    // console.log( JSON.stringify( user, null, 2 ) );
     return (
         <View style={ styles.profileWrapper }>
             <View style={ [
