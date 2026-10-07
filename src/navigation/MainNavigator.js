@@ -19,7 +19,6 @@ export default function MainNavigator(){
                 },
             } }
         >
-            {/* <Stack.Screen name="Home" component={ Home } /> */}
             <Stack.Screen name="MainTabs" component={ BottomTabNavigator } />
             <Stack.Screen name="NewChatModal" component={ NewChat } />
             <Stack.Screen name="ChatScreen" component={ ChatScreen } />

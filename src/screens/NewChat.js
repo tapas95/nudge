@@ -36,7 +36,7 @@ const NewChat = ( { navigation } ) => {
                 sort: Contacts.SortTypes.FirstName
             } );
             const isPhoneNumber = ( str ) => {
-                if (!str) return false;
+                if ( !str ) return false;
                 const cleaned = str.replace(/[\s\-\(\)\+]/g, '');
                 return /^\d+$/.test(cleaned);
             };

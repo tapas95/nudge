@@ -22,13 +22,9 @@ export default function App() {
     Inter_700Bold,
   } );
   useEffect( () => {
-    if ( fontsLoaded ) {
-      SplashScreen.hideAsync();
-    }
+    if ( fontsLoaded ) SplashScreen.hideAsync();
   }, [ fontsLoaded ] );
-  if ( !fontsLoaded ) {
-    return null; // Keep native splash screen showing while loading fonts
-  }
+  if ( !fontsLoaded ) return null;
   return (
     <SafeAreaProvider>
         <ThemeProvider>
