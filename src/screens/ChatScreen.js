@@ -28,6 +28,7 @@ const ChatScreen = ( { route, navigation } ) => {
     const [ isEmojiPickerOpen, setIsEmojiPickerOpen ] = useState( false );
     const [ isReactionOpen, setIsReactionOpen ] = useState( null );
     const [ isUploadingMedia, setIsUploadingMedia ] = useState( false );
+    const [ pickedMedia, setPickedMedia ] = useState();
     const inputRef = useRef( null );
     useEffect( () => {
         setAudioModeAsync( {
@@ -211,8 +212,8 @@ const ChatScreen = ( { route, navigation } ) => {
             quality: 0.75,
         } );
         if ( !result.canceled ){
-            const localUri = result.assets[ 0 ].uri;
             setIsUploadingMedia( true );
+            setPickedMedia( result.assets[ 0 ].uri );
         }
         console.log( JSON.stringify( result, null, 4 ) );
     }
@@ -498,6 +499,11 @@ const ChatScreen = ( { route, navigation } ) => {
                                         }
                                     ] }
                                 >
+                                    { pickedMedia && 
+                                        <View style={ { marginBottom: 8 } }>
+                                            <Image source={ { uri: pickedMedia } } width={ 50 } height={ 50 } resizeMode="cover" style={ { borderRadius: 8 } } />
+                                        </View>
+                                    }
                                     { replyMessage && (
                                         <View
                                             style={ [
